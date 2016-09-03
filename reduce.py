@@ -55,7 +55,7 @@ VERBOSE = False
 # Setup logging
 #
 logger = logging.getLogger(PROGRAM_NAME + " Log")
-fh = logging.FileHandler(CURRENT_DATE_TIME + "-reduce.log")
+fh = logging.FileHandler("reduce-" + CURRENT_DATE_TIME.replace("-", "").replace("T", "at").replace(":", "") + ".log")
 ch = logging.StreamHandler()
 log_format_file = logging.Formatter("%(asctime)s::%(levelname)s -- %(message)s")
 log_format_console = logging.Formatter("%(levelname)s -- %(message)s")
