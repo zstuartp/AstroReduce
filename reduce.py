@@ -542,6 +542,8 @@ def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
 	# Find and correct the light images
 	raw_dic = sort_lights(find_astro_imgs_with_type(raw_dir, ImageType.RAW))
 	print ("Correcting light images from " + raw_dir)
+	print ("             with darks from " + darks_dir)
+	print ("              and flats from " + flats_dir)
 	create_corrected_images(raw_dic, mdarks_dic, mflats_dic, output_dir, stack)
 
 
