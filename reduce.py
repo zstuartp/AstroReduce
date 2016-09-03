@@ -119,18 +119,24 @@ class AstroImage:
 						  }.get(type, ImageType.RAW)
 
 	def loadData(self):
+		""" Load image data """
 		if self.fits_data is None:
+			# Only load the data if it has not already been loaded
+			# If you want to reload the data, use .unloadData() first
 			self.fits_data = fits.getdata(self.getFullPath())
 		return self.fits_data
 
 	def unloadData(self):
+		""" Unload the image data from memory """
 		self.fits_data = None
 
 	def loadHeader(self):
+		""" Load the fits header """
 		self.fits_header = fits.getheader(self.getFullPath())
 		return self.fits_header
 
 	def loadValues(self):
+		""" Load the important values from the fits header """
 		if fits.header == None:
 			logger.warning("Attempted to load values from image with no header: " + self.getFullPath())
 		self.binning  = self.fits_header.get("XBINNING")
@@ -139,22 +145,26 @@ class AstroImage:
 		self.filter   = self.fits_header.get("FILTER")
 
 	def copyValues(self, astro_img):
+		""" Copy the important header values from another AstroImage """
 		self.binning = astro_img.binning
 		self.ccd_temp = astro_img.ccd_temp
 		self.exp_time = astro_img.exp_time
 		self.filter = astro_img.filter
 
 	def writeValues(self):
+		""" Write the important header values back to the disk """
 		self.fits_header["XBINNING"] = self.binning
 		self.fits_header["CCD-TEMP"] = self.ccd_temp
 		self.fits_header["EXPTIME"]  = self.exp_time
 		self.fits_header["FILTER"]   = self.filter
 
 	def saveToDisk(self):
+		""" Save the fits header and image data to the disk """
 		self.writeValues()
 		fits.writeto(self.getFullPath(), data=self.fits_data, header=self.fits_header, clobber=True)
 
 	def setFilePath(self, path):
+		""" Set the full path of the file """
 		self.file_dir = os.path.dirname(path)
 		if self.file_dir == "":
 			self.file_dir = "."
@@ -171,14 +181,16 @@ class AstroImage:
 			self.fits_header = hdulist[0].header
 			self.fits_data = hdulist[0].data
 			self.saveToDisk()
-		self.loadHeader()
-		self.loadValues()
-		self.loadImageType()
+		self.loadHeader() # Load fits header
+		self.loadValues() # Read in important header values
+		self.loadImageType() # Get the type of image (dark, flat, light, etc.)
 		if self.img_type == ImageType.RAW:
+			# If the image is a light image, get the name of the object
 			self.object_name = os.path.basename(path).split("-")[0]
 
 
 def update_progress(progress):
+	""" A simple progress bar, accepts a float between 0 and 1 """
     barLength = 54 # Modify this to change the length of the progress bar
     status = ""
     if isinstance(progress, int):
@@ -251,6 +263,8 @@ def sort_darks(darks_unsorted):
 	for dark in darks_unsorted:
 		et = int(round(dark.exp_time))
 		if et not in darks:
+			# Found a dark with a new exposure time
+			# Create a new array in the dictionary
 			logger.info("Found a dark with exp_time=" + str(et))
 			darks[et] = []
 		darks[et].append(dark)
@@ -266,6 +280,8 @@ def sort_flats(flats_unsorted):
 	for flat in flats_unsorted:
 		fl = flat.filter
 		if fl not in flats:
+			# Found a flat with a new filter
+			# Create a new array in the dictionary
 			logger.info("Found a flat with filter=" + fl)
 			flats[fl] = []
 		flats[fl].append(flat)
@@ -321,8 +337,12 @@ def create_master_darks(darks_dic, output_dir):
 		# Median combine
 		mdark = med_combine_new_file(darks, path)
 		unload_astro_imgs(darks)
+
+		# Copy important header values
 		mdark.exp_time = exp_time
 		mdark.img_type = ImageType.MDARK
+
+		# Save new master dark to disk and free up memory
 		mdark.saveToDisk()
 		mdark.unloadData()
 		logger.info("Create master dark with exp_time=" + str(exp_time) + ": " + path)
@@ -345,6 +365,7 @@ def dark_correct_flats(flats, mdarks_dic):
 		et = int(round(flat.exp_time))
 		mdark = mdarks_dic.get(et)
 		if mdark == None:
+			# No dark found with required exposure time, ignore this flat
 			logger.warning("Dropping flat without matching dark (exp_time=" + str(et) + "): " + flat.getFullPath())
 			flat.unloadData()
 			flats.remove(flat)
@@ -513,6 +534,7 @@ def main():
 		sys.exit(1)
 	for o, a in opts:
 		if o in ("-V", "--verbose"):
+			# Enable verbose message output
 			global VERBOSE
 			VERBOSE = True
 			ch.setLevel(logging.INFO)
