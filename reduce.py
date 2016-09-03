@@ -35,6 +35,7 @@ from enum import Enum
 import getopt
 import glob
 import logging
+from threading import Thread
 import numpy
 import os
 import sys
@@ -196,6 +197,8 @@ class AstroImage:
 
 def update_progress(progress):
 	""" A simple progress bar, accepts a float between 0 and 1 """
+	if VERBOSE:
+		return
 	barLength = 54 # Modify this to change the length of the progress bar
 	status = ""
 	if isinstance(progress, int):
@@ -223,6 +226,29 @@ def update_progress(progress):
 	text = "\rProgress: [{0}] {1}% {2}".format( "#"*block + "-"*(barLength-block), round(progress*100), status)
 	sys.stdout.write(text)
 	sys.stdout.flush()
+
+
+def update_progress_on_threads(threads):
+	""" Update the progress bar based on the number of threads completed """
+	i = 0
+	prog = 0
+	end = len(threads)
+	handled = {}
+	update_progress(0)
+
+	logger.debug(str(end) + " threads created")
+	while True: # Check thread status and update the progress bar
+		threads[i].join(0.001)
+		if not threads[i].is_alive() and not bool(handled.get(i)):
+			logger.debug("Thread[" + str(i) + "] finished")
+			handled[i] = True
+			prog += 1
+			update_progress(prog / end)
+			if prog == end:
+				break
+		i += 1
+		if i >= end:
+			i = 0
 
 
 def find_astro_imgs(path):
@@ -353,31 +379,40 @@ def flat_correct(img, flat):
 	return img
 
 
+def create_master_dark(darks, output_dir):
+	""" Median combine darks into one file in output_dir """
+	if not bool(darks):
+		logger.error("No darks available to create master dark")
+		return
+
+	# Create the file name
+	path = os.path.join(output_dir, "MDark-Exp" + str(darks[0].exp_time).replace(".", "s") + ".fts")
+
+	# Median combine
+	mdark = med_combine_new_file(darks, path)
+	unload_astro_imgs(darks)
+
+	# Save
+	mdark.copyValues(darks[0])
+	mdark.saveToDisk()
+	mdark.unloadData()
+	logger.info("Created master dark with exp_time=" + str(darks[0].exp_time) + ": " + path)
+
+
 def create_master_darks(darks_dic, output_dir):
 	""" Create the master dark images """
-	prog = 0
-	end = len(darks_dic)
-	for exp_time, darks in darks_dic.items():
-		# Create the file name
-		path = os.path.join(output_dir, "MDark-Exp" + str(exp_time).replace(".", "s") + ".fts")
+	if not bool(darks_dic):
+		logger.warning("No darks are available to median combine")
+		return
 
-		# Median combine
-		mdark = med_combine_new_file(darks, path)
-		unload_astro_imgs(darks)
+	threads = []
+	for darks in darks_dic.values():
+		# Spawn a process for each group of darks
+		t = Thread(target=create_master_dark, args=(darks, output_dir))
+		t.start()
+		threads.append(t)
 
-		# Copy important header values
-		mdark.exp_time = exp_time
-		mdark.img_type = ImageType.MDARK
-
-		# Save new master dark to disk and free up memory
-		mdark.saveToDisk()
-		mdark.unloadData()
-		logger.info("Create master dark with exp_time=" + str(exp_time) + ": " + path)
-		if not VERBOSE:
-			update_progress(prog / end)
-			prog += 1
-	if not VERBOSE:
-		update_progress(1)
+	update_progress_on_threads(threads)
 
 
 def dark_correct_flats(flats, mdarks_dic):
@@ -401,45 +436,107 @@ def dark_correct_flats(flats, mdarks_dic):
 	return flats
 
 
+def create_master_flat(flats, mdarks_dic, output_dir):
+	""" Dark correct and median combine flats into one file in output_dir """
+	if not bool(flats):
+		logger.error("No flats available to create master flat")
+		return
+
+	# Create the file name
+	path = os.path.join(output_dir, "MFlat-" + flats[0].filter + ".fts")
+
+	# Dark correct the flats
+	dark_correct_flats(flats, mdarks_dic)
+	# Median combine to a new fits image
+	mflat = med_combine_new_file(flats, path)
+	# Free up memory
+	unload_astro_imgs(flats)
+
+	# Normalize
+	data = mflat.fits_data
+	mflat.fits_data = data / numpy.median(data)
+
+	# Copy important header values
+	mflat.copyValues(flats[0])
+	mflat.img_type = ImageType.MFLAT
+
+	# Save new master flat to disk and free up memory
+	mflat.saveToDisk()
+	mflat.unloadData()
+	logger.info("Created master flat for filter=" + flats[0].filter + ": " + path)
+
+
 def create_master_flats(flats_dic, mdarks_dic, output_dir):
 	""" Create the master flat images """
 	if not bool(flats_dic):
 		logger.warning("No flats are available to median combine")
 		return
-	prog = 0
-	end = len(flats_dic)
-	for filter, flats in flats_dic.items():
-		# Create the file name
-		path = os.path.join(output_dir, "MFlat-" + filter + ".fts")
 
-		# Dark correct the flats
-		dark_correct_flats(flats, mdarks_dic)
-		# Median combine to a new fits image
-		mflat = med_combine_new_file(flats, path)
-		# Free up memory
-		unload_astro_imgs(flats)
+	threads = []
+	for flats in flats_dic.values():
+		# Spawn a process for each group of flats
+		t = Thread(target=create_master_flat, args=(flats, mdarks_dic, output_dir))
+		t.start()
+		threads.append(t)
 
-		# Normalize
-		data = mflat.fits_data
-		mflat.fits_data = data / numpy.median(data)
+	update_progress_on_threads(threads)
 
-		# Copy important header values
-		mflat.copyValues(flats[0])
-		mflat.img_type = ImageType.MFLAT
 
-		# Save new master flat to disk and free up memory
-		mflat.saveToDisk()
-		mflat.unloadData()
-		logger.info("Created master flat for filter=" + filter + ": " + path)
-		if not VERBOSE:
-			update_progress(prog / end)
-			prog +=1
-	if not VERBOSE:
-		update_progress(1)
+def create_corrected_img(key, imgs, mdarks_dic, mflats_dic, output_dir, stack=False):
+	on = key[0] # Object name
+	et = key[1] # Exposure time
+	fl = key[2] # Filter
+	mdark = None
+	mflat = None
+
+	# Find the corresp. master dark
+	if bool(mdarks_dic):
+		mdark = mdarks_dic.get(int(round(et)))
+		if mdark == None: # No dark was found with the correct exposure time
+			logger.warning("Skipping image with no matching master dark (exp_time=" + str(et) + "): " + imgs[0].getFullPath())
+			return
+		else:
+			mdark = mdark[0] # Get the first master dark in list
+
+	# Find the corresp. master flat
+	if bool(mflats_dic):
+		mflat = mflats_dic.get(fl)
+		if mflat == None: # No flat was found with the correct filter
+			logger.warning("Skipping image with no matching master flat(filter=" + fl + "): " + imgs[0].getFullPath())
+			return
+		else:
+			mflat = mflat[0]
+
+	i = 0
+	for img in imgs: # Copy the raw light to a new file, then dark correct and flat correct
+		file_path = os.path.join(output_dir, on \
+			+ "-" + img.date_obs.replace("-", "").replace("T", "at").replace(":", "") \
+			+ "-Temp" + str(int(round(img.ccd_temp))).replace("-", "m") \
+			+ "-Bin" + str(img.binning) \
+			+ "-Exp" + str(et).replace(".", "s") \
+			+ "-" + fl \
+			+ ".fts")
+		cimg = AstroImage(file_path, new_file=True)
+		cimg.fits_header = img.fits_header
+		cimg.loadValues()
+		if mdark is not None:
+			dark_correct(img, mdark)
+		else:
+			logger.warning("No dark image found for light: " + cimg.getFullPath())
+		if mflat is not None:
+			flat_correct(img, mflat)
+		else:
+			logger.warning("No flat image found for light: " + cimg.getFullPath())
+		cimg.fits_data = img.fits_data
+		cimg.saveToDisk()
+		cimg.unloadData()
+		img.unloadData()
+		logger.info("Corrected image with exp_time=" + str(et) + " and filter=" + fl + ": " + img.getFullPath())
+		i += 1
 
 
 def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=False):
-	""" Dark and flat corrects light images, stacking is not implimented yet """
+	""" Dark and flat corrects light images, stacking is not implemented yet """
 	# TODO: Place all images into a dictionary with key=object_name and return the dictionary for stacking
 	if not bool(imgs_dic):
 		logger.error("No images available to correct")
@@ -455,71 +552,14 @@ def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=
 		logger.warning("No corrections possible, skipping all light images")
 		return
 
-	
-	total_count = 0
-
-	prog = 0
-	end = len(imgs_dic)
-
+	threads = []
 	for key, imgs in imgs_dic.items():
-		on = key[0] # Object name
-		et = key[1] # Exposure time
-		fl = key[2] # Filter
-		mdark = None
-		mflat = None
+		# Spawn a process for each group of lights
+		t = Thread(target=create_corrected_img, args=(key, imgs, mdarks_dic, mflats_dic, output_dir))
+		t.start()
+		threads.append(t)
 
-		# Find the corresp. master dark
-		if bool(mdarks_dic):
-			mdark = mdarks_dic.get(int(round(et)))
-			if mdark == None: # No dark was found with the correct exposure time
-				logger.warning("Skipping image with no matching master dark (exp_time=" + str(et) + "): " + img.getFullPath())
-				continue
-			else:
-				mdark = mdark[0] # Get the first master dark in list
-
-		# Find the corresp. master flat
-		if bool(mflats_dic):
-			mflat = mflats_dic.get(fl)
-			if mflat == None: # No flat was found with the correct filter
-				logger.warning("Skipping image with no matching master flat(filter=" + fl + "): " + img.getFullPath())
-				continue
-			else:
-				mflat = mflat[0]
-
-		i = 0
-		for img in imgs: # Copy the raw light to a new file, then dark correct and flat correct
-			file_path = os.path.join(output_dir, on \
-				+ "-" + img.date_obs.replace("-", "").replace("T", "at").replace(":", "") \
-				+ "-Temp" + str(int(round(img.ccd_temp))).replace("-", "m") \
-				+ "-Bin" + str(img.binning) \
-				+ "-Exp" + str(et).replace(".", "s") \
-				+ "-" + fl \
-				+ ".fts")
-			cimg = AstroImage(file_path, new_file=True)
-			cimg.fits_header = img.fits_header
-			cimg.loadValues()
-			if mdark is not None:
-				dark_correct(img, mdark)
-			else:
-				logger.warning("No dark image found for light: " + cimg.getFullPath())
-			if mflat is not None:
-				flat_correct(img, mflat)
-			else:
-				logger.warning("No flat image found for light: " + cimg.getFullPath())
-			cimg.fits_data = img.fits_data
-			cimg.saveToDisk()
-			cimg.unloadData()
-			img.unloadData()
-			logger.info("Corrected image with exp_time=" + str(et) + " and filter=" + fl + ": " + img.getFullPath())
-			i += 1
-		total_count += i
-		if not VERBOSE:
-			update_progress(prog / end)
-			prog += 1
-	if not VERBOSE:
-		update_progress(1)
-	if total_count > 0:
-		logger.info("Corrected " + str(total_count) + " image" + ("s" if total_count > 1 else "") + ". Enjoy :-)")
+	update_progress_on_threads(threads)
 
 
 def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
