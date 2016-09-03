@@ -312,6 +312,12 @@ def sort_lights(lights_unsorted):
 
 def dark_correct(img, dark):
 	""" Dark corrects image (Duh! Read the function name next time!) """
+	if img is None:
+		logger.error("Attempted to dark correct a non-existing light image")
+		return
+	if dark is None:
+		logger.error("Attempted to dark correct with a non-existing dark image")
+		return
 	logger.info("Dark correcting image: " + img.getFullPath())
 	logger.info("	         with dark: " + dark.getFullPath())
 	img.loadData()
@@ -322,6 +328,12 @@ def dark_correct(img, dark):
 
 def flat_correct(img, flat):
 	""" Flat corrects the image """
+	if img is None:
+		logger.error("Attempted to flat correct a non-existing light image")
+		return
+	if flat is None:
+		logger.error("Attempted to flat correct with a non-existing flat image")
+		return
 	logger.info("Flat correcting image: " + img.getFullPath())
 	logger.info("            with flat: " + flat.getFullPath())
 	img.loadData()
@@ -363,7 +375,7 @@ def dark_correct_flats(flats, mdarks_dic):
 		logger.warning("No flats are available to dark correct")
 		return
 	if not bool(mdarks_dic):
-		logger.warning("Not master darks available to dark correct flats")
+		logger.warning("No master darks available to dark correct flats for filter=" + flats[0].filter)
 		return
 	for flat in flats:
 		et = int(round(flat.exp_time))
@@ -418,6 +430,21 @@ def create_master_flats(flats_dic, mdarks_dic, output_dir):
 def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=False):
 	""" Dark and flat corrects light images, stacking is not implimented yet """
 	# TODO: Place all images into a dictionary with key=object_name and return the dictionary for stacking
+	if not bool(imgs_dic):
+		logger.error("No images available to correct")
+		return
+	no_run = 0
+	if not bool(mdarks_dic):
+		logger.warning("No master darks available")
+		no_run += 1
+	if not bool(mflats_dic):
+		logger.warning("No master flats available")
+		no_run += 1
+	if no_run > 1:
+		logger.warning("No corrections possible, skipping all light images")
+		return
+
+	
 	total_count = 0
 
 	prog = 0
@@ -427,20 +454,26 @@ def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=
 		on = key[0] # Object name
 		et = key[1] # Exposure time
 		fl = key[2] # Filter
+		mdark = None
+		mflat = None
 
 		# Find the corresp. master dark
-		mdark = mdarks_dic.get(int(round(et)))
-		if mdark == None: # No dark was found with the correct exposure time
-			logger.warning("Skipping image with no matching master dark (exp_time=" + str(et) + "): " + img.getFullPath())
-			continue
-		mdark = mdark[0] # Get the first master dark in list
+		if bool(mdarks_dic):
+			mdark = mdarks_dic.get(int(round(et)))
+			if mdark == None: # No dark was found with the correct exposure time
+				logger.warning("Skipping image with no matching master dark (exp_time=" + str(et) + "): " + img.getFullPath())
+				continue
+			else:
+				mdark = mdark[0] # Get the first master dark in list
 
 		# Find the corresp. master flat
-		mflat = mflats_dic.get(fl)
-		if mflat == None: # No flat was found with the correct filter
-			logger.warning("Skipping image with no matching master flat(filter=" + fl + "): " + img.getFullPath())
-			continue
-		mflat = mflat[0]
+		if bool(mflats_dic):
+			mflat = mflats_dic.get(fl)
+			if mflat == None: # No flat was found with the correct filter
+				logger.warning("Skipping image with no matching master flat(filter=" + fl + "): " + img.getFullPath())
+				continue
+			else:
+				mflat = mflat[0]
 
 		i = 0
 		for img in imgs: # Copy the raw light to a new file, then dark correct and flat correct
@@ -454,8 +487,14 @@ def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=
 			cimg = AstroImage(file_path, new_file=True)
 			cimg.fits_header = img.fits_header
 			cimg.loadValues()
-			dark_correct(img, mdark)
-			flat_correct(img, mflat)
+			if mdark is not None:
+				dark_correct(img, mdark)
+			else:
+				logger.warning("No dark image found for light: " + cimg.getFullPath())
+			if mflat is not None:
+				flat_correct(img, mflat)
+			else:
+				logger.warning("No flat image found for light: " + cimg.getFullPath())
 			cimg.fits_data = img.fits_data
 			cimg.saveToDisk()
 			cimg.unloadData()
