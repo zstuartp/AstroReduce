@@ -41,7 +41,7 @@ import sys
 
 PROGRAM_NAME = "Astronomy Data Reduction Script"
 VERSION = 2
-PATCH = 0
+PATCH = 1
 VERSION_STR = str(VERSION) + "." + str(PATCH)
 
 CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
