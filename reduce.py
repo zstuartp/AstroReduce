@@ -5,7 +5,7 @@
 ################################################################################
 #
 # - To use this script directly without needing to specify specific
-#   derectories, place it in a directory with all of the following folders:
+#   directories, place it in a directory with all of the following folders:
 #
 # //===========================================\\
 # || Directory  | Contents                     ||
@@ -569,6 +569,7 @@ def usage():
 	print ("    -L run_level    0 -> Process darks, flats, and lights")
 	print ("                    1 -> Process flats and lights using only existing master darks")
 	print ("                    2 -> Process lights using only existing darks and flats")
+
 
 def main():
 	light_dir = "./lights"
