@@ -513,24 +513,30 @@ def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=
 
 def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
 		   mflats_dir="./mflats", raw_dir="./lights", output_dir="./output", \
-		   stack=False):
-	# Create master darks
-	print ("Creating master darks in " + mdarks_dir + " from " + darks_dir)
-	# Find all dark images in darks_dir,
-	# then sort them by exposure time,
-	# Then median combine to master darks in mdarks_dir
-	create_master_darks( \
-		sort_darks(find_astro_imgs_with_type(darks_dir, ImageType.DARK)), \
-		mdarks_dir)
-	# Find and sort master darks by exposure time
+		   stack=False, level=0):
+	mdarks_dic = None
+	mflats_dic = None
+	raw_dic = None
+
+	if level < 1:
+		# Create master darks
+		print ("Creating master darks in " + mdarks_dir + " from " + darks_dir)
+		# Find all dark images in darks_dir,
+		# then sort them by exposure time,
+		# Then median combine to master darks in mdarks_dir
+		create_master_darks( \
+			sort_darks(find_astro_imgs_with_type(darks_dir, ImageType.DARK)), \
+			mdarks_dir)
+
 	mdarks_dic = sort_darks(find_astro_imgs_with_type(mdarks_dir, ImageType.MDARK))
 
-	# Create master flats
-	print ("Creating master flats in " + mflats_dir + " from " + flats_dir)
-	create_master_flats( \
-		sort_flats(find_astro_imgs_with_type(flats_dir, ImageType.FLAT)), \
-		mdarks_dic, mflats_dir)
-	# Find and sort master flats
+	if level < 2:
+		# Create master flats
+		print ("Creating master flats in " + mflats_dir + " from " + flats_dir)
+		create_master_flats( \
+			sort_flats(find_astro_imgs_with_type(flats_dir, ImageType.FLAT)), \
+			mdarks_dic, mflats_dir)
+
 	mflats_dic = sort_flats(find_astro_imgs_with_type(mflats_dir, ImageType.MFLAT))
 
 	# Find and correct the light images
@@ -558,7 +564,9 @@ def usage():
 	print ("    -D mdark_dir    Master dark images output directory")
 	print ("    -f flat_dir     Raw flat images directory")
 	print ("    -F mflat_dir    Master flat images output directory")
-
+	print ("    -L run_level    0 -> Process darks, flats, and lights")
+	print ("                    1 -> Process flats and lights using only existing master darks")
+	print ("                    2 -> Process lights using only existing darks and flats")
 
 def main():
 	light_dir = "./lights"
@@ -567,6 +575,7 @@ def main():
 	flat_dir = "./flats"
 	mflat_dir = "./mflats"
 	output_dir = "./output"
+	level = 0
 
 	OPTIONS = "vhVl:d:D:f:F:o:L:"
 	LONG_OPTIONS = ["version", "help", "verbose"]
@@ -583,6 +592,8 @@ def main():
 			global VERBOSE
 			VERBOSE = True
 			ch.setLevel(logging.INFO)
+		elif o in ("-L"):
+			level = int(a)
 		elif o in ("-l", "--light_dir"):
 			light_dir = a
 		elif o in ("-d", "--dark-dir"):
@@ -603,7 +614,7 @@ def main():
 			sys.exit(1)
 
 	# Reduce
-	reduce(dark_dir, mdark_dir, flat_dir, mflat_dir, light_dir, output_dir, stack=False)
+	reduce(dark_dir, mdark_dir, flat_dir, mflat_dir, light_dir, output_dir, stack=False, level=level)
 	return
 
 
