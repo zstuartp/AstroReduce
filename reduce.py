@@ -50,6 +50,7 @@ CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
 # Flags
 #
 VERBOSE = False
+OK_MODE = False
 
 #
 # Setup logging
@@ -208,6 +209,16 @@ def update_progress(progress):
 	if progress >= 1:
 		progress = 1
 		status = "Done...\r\n"
+	if OK_MODE: # Reverse the loading bar for fun (-k option)
+		if progress <= 0:
+			progress = 0
+			status = "Done..."
+		elif progress >= 1:
+			progress = 1
+			status = "       \r\n"
+		else:
+			status = "        "
+		progress = 1 - progress
 	block = int(round(barLength*progress))
 	text = "\rProgress: [{0}] {1}% {2}".format( "#"*block + "-"*(barLength-block), round(progress*100), status)
 	sys.stdout.write(text)
@@ -580,7 +591,7 @@ def main():
 	output_dir = "./output"
 	level = 0
 
-	OPTIONS = "vhVl:d:D:f:F:o:L:"
+	OPTIONS = "vhVl:d:D:f:F:o:L:k"
 	LONG_OPTIONS = ["version", "help", "verbose"]
 
 	try:
@@ -615,6 +626,9 @@ def main():
 		elif o in ("-h", "--help"):
 			usage()
 			sys.exit(1)
+		elif o in ("-k"):
+			global OK_MODE
+			OK_MODE = True
 
 	# Reduce
 	reduce(dark_dir, mdark_dir, flat_dir, mflat_dir, light_dir, output_dir, stack=False, level=level)
