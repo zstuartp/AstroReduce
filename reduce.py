@@ -44,7 +44,7 @@ VERSION = 2
 PATCH = 0
 VERSION_STR = str(VERSION) + "." + str(PATCH)
 
-CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
+CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
 
 #
 # Flags
@@ -98,6 +98,7 @@ class AstroImage:
 	# Image parameters
 	binning = 0
 	ccd_temp = 0
+	date_obs = CURRENT_DATE_TIME
 	exp_time = 0
 	filter = "NA"
 	img_type = ImageType.UNKNOWN
@@ -141,6 +142,7 @@ class AstroImage:
 			logger.warning("Attempted to load values from image with no header: " + self.getFullPath())
 		self.binning  = self.fits_header.get("XBINNING")
 		self.ccd_temp = self.fits_header.get("CCD-TEMP")
+		self.date_obs = self.fits_header.get("DATE-OBS")
 		self.exp_time = self.fits_header.get("EXPTIME")
 		self.filter   = self.fits_header.get("FILTER")
 
@@ -148,6 +150,7 @@ class AstroImage:
 		""" Copy the important header values from another AstroImage """
 		self.binning = astro_img.binning
 		self.ccd_temp = astro_img.ccd_temp
+		self.date_obs = astro_img.date_obs
 		self.exp_time = astro_img.exp_time
 		self.filter = astro_img.filter
 
@@ -155,6 +158,7 @@ class AstroImage:
 		""" Write the important header values back to the disk """
 		self.fits_header["XBINNING"] = self.binning
 		self.fits_header["CCD-TEMP"] = self.ccd_temp
+		self.fits_header["DATE-OBS"] = self.date_obs
 		self.fits_header["EXPTIME"]  = self.exp_time
 		self.fits_header["FILTER"]   = self.filter
 
@@ -441,10 +445,12 @@ def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=
 		i = 0
 		for img in imgs: # Copy the raw light to a new file, then dark correct and flat correct
 			file_path = os.path.join(output_dir, on \
+				+ "-" + img.date_obs.replace("-", "").replace("T", "at").replace(":", "") \
 				+ "-Temp" + str(int(round(img.ccd_temp))).replace("-", "m") \
 				+ "-Bin" + str(img.binning) \
-				+ "-Exp" + str(et).replace(".", "s") + "-" + fl \
-				+ "-" + str(i) + ".fts")
+				+ "-Exp" + str(et).replace(".", "s") \
+				+ "-" + fl \
+				+ ".fts")
 			cimg = AstroImage(file_path, new_file=True)
 			cimg.fits_header = img.fits_header
 			cimg.loadValues()
