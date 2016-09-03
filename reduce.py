@@ -40,7 +40,7 @@ import os
 import sys
 
 PROGRAM_NAME = "Astronomy Data Reduction Script"
-VERSION = 0
+VERSION = 2
 PATCH = 0
 VERSION_STR = str(VERSION) + "." + str(PATCH)
 
