@@ -39,6 +39,7 @@ from threading import Thread
 import numpy
 import os
 import sys
+from time import sleep
 
 PROGRAM_NAME = "Astronomy Data Reduction Script"
 VERSION = 2
@@ -238,7 +239,7 @@ def update_progress_on_threads(threads):
 
 	logger.debug(str(end) + " threads created")
 	while True: # Check thread status and update the progress bar
-		threads[i].join(0.001)
+		sleep(0.001)
 		if not threads[i].is_alive() and not bool(handled.get(i)):
 			logger.debug("Thread[" + str(i) + "] finished")
 			handled[i] = True
