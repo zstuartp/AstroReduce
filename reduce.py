@@ -62,7 +62,7 @@ import getopt
 import glob
 import logging
 from threading import Thread
-import numpy
+import numpy as np
 import os
 import sys
 from time import sleep
@@ -308,7 +308,7 @@ def med_combine(imgs, output_img):
 	data_in = []
 	for img in imgs:
 		data_in.append(img.loadData())
-	data_out = numpy.median(data_in, axis=0)
+	data_out = np.median(data_in, axis=0)
 	output_img.fits_data = data_out
 	logger.info("Median combined " + str(len(data_in)) + " images to: " + output_img.getFullPath())
 	return output_img
@@ -481,7 +481,7 @@ def create_master_flat(flats, mdarks_dic, output_dir):
 
 	# Normalize
 	data = mflat.fits_data
-	mflat.fits_data = data / numpy.median(data)
+	mflat.fits_data = data / np.median(data)
 
 	# Copy important header values
 	mflat.copyValues(flats[0])
