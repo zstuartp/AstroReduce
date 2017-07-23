@@ -29,10 +29,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ################################################################################
-##########            CSUSB Astronomy Data Reduction Script           ##########
-################################################################################
-
-################################################################################
 #
 # - To use this script directly without needing to specify specific
 #   directories, place it in a directory with all of the following folders:
@@ -55,7 +51,7 @@
 #
 # - Contact "Zackary Parsons <parsonsz@coyote.csusb.edu>"
 #   with any questions, comments, and/or improvements
-# 
+#
 ################################################################################
 
 import argparse
