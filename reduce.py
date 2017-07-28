@@ -194,7 +194,7 @@ class AstroImage:
 	def saveToDisk(self):
 		""" Save the fits header and image data to the disk """
 		self.writeValues()
-		fits.writeto(self.getFullPath(), data=self.fits_data, header=self.fits_header, clobber=True)
+		fits.writeto(self.getFullPath(), data=self.fits_data, header=self.fits_header, overwrite=True)
 
 	def setFilePath(self, path):
 		""" Set the full path of the file """
@@ -317,7 +317,7 @@ def med_combine(imgs, output_img):
 def med_combine_new_file(imgs, output_path):
 	""" Median combine fits images into a new file """
 	output_img = AstroImage(output_path, new_file=True)
-	imgs[0].fits_header.tofile(output_path, clobber=True)
+	imgs[0].fits_header.tofile(output_path, overwrite=True)
 	output_img = med_combine(imgs, output_img)
 	return output_img
 
