@@ -32,24 +32,7 @@
 
 ################################################################################
 #
-# - To use this script directly without needing to specify specific
-#   directories, place it in a directory with all of the following folders:
-#
-# //===========================================\\
-# || Directory  | Contents                     ||
-# ||------------+------------------------------||
-# || ./lights/  | Raw light images             ||
-# || ./darks/   | Dark images                  ||
-# || ./flats/   | Flat images                  ||
-# || ./mdarks/  | Master dark images output    ||
-# || ./mflats/  | Master flat images output    ||
-# || ./output/  | Corrected light image output ||
-# \\===========================================//
-#
-#   Then run the program using python3
-#
-# - For information about running the script with a different directory
-#   structure, run the program with either the "-h" or "--help" options
+# For information on using this program, view the README.
 #
 # - Contact "Zackary Parsons <parsonsz@coyote.csusb.edu>"
 #   with any questions, comments, and/or improvements
