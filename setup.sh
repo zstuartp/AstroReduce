@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 REDUCE_VENV=reduce-venv # .gitignore is set to ignore "reduce-venv
 
