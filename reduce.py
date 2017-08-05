@@ -128,10 +128,9 @@ class AstroImage:
 		""" Get the type enum of an image based on the file name """
 		type = os.path.basename(self.getFullPath()).split("-")[0].lower()
 		self.img_type = { "dark":  ImageType.DARK,
-						  "mdark": ImageType.MDARK,
-						  "flat":  ImageType.FLAT,
-						  "mflat": ImageType.MFLAT
-						  }.get(type, ImageType.RAW)
+		                  "mdark": ImageType.MDARK,
+		                  "flat":  ImageType.FLAT,
+		                  "mflat": ImageType.MFLAT }.get(type, ImageType.RAW)
 
 	def loadData(self):
 		""" Load image data """
