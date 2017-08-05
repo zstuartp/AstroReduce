@@ -53,9 +53,10 @@ import sys
 from time import sleep
 
 PROGRAM_NAME = "Astronomy Data Reduction Script"
-VERSION = 2
-PATCH = 3
-VERSION_STR = str(VERSION) + "." + str(PATCH)
+VER_MAJOR = 2
+VER_PATCH = 4
+VER_SUB_STR = ""
+VERSION_STR = str(VER_MAJOR) + "." + str(VER_PATCH) + VER_SUB_STR
 
 CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
 
