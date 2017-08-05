@@ -18,7 +18,7 @@ rm -f $_TEST_DATA_DIR/output/*.fts
 python3 -c "
 import reduce
 test_data_dir=\"$_TEST_DATA_DIR/\"
-`cat reduce-test.py`"
+`cat scripts/reduce-test.py`"
 
 TEST_STATUS=$?
 
