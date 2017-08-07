@@ -1,5 +1,6 @@
 reduce-venv
 test-data
+build
 
 .*
 __*
@@ -31,5 +32,9 @@ Module.symvers
 *.dwo
 *.su
 *.log
+*.pex
+*.egg
+*.egg-info
 
 !.gitignore
+!__*__.py
