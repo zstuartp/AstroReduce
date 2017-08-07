@@ -44,7 +44,9 @@
 import numpy as np
 import sys
 
-if "reduce" not in sys.modules or test_data_dir == None:
+from astroreduce import reduce
+
+if "astroreduce" not in sys.modules or test_data_dir == None:
     print ("This script is not meant to be run directly, please run the test.sh script in the base directory.")
     sys.exit(1)
 

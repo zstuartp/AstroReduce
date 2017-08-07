@@ -52,19 +52,11 @@ import os
 import sys
 from time import sleep
 
-PROGRAM_NAME = "Astronomy Data Reduction Script"
-VER_MAJOR = 2
-VER_PATCH = 4
-VER_SUB_STR = ""
-VERSION_STR = str(VER_MAJOR) + "." + str(VER_PATCH) + VER_SUB_STR
+from . import flags
+
+PROGRAM_NAME = "AstroReduce" # TODO: Use a global
 
 CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
-
-#
-# Flags
-#
-VERBOSE = False
-OK_MODE = False
 
 #
 # Setup logging
@@ -209,7 +201,7 @@ class AstroImage:
 
 def update_progress(progress):
 	""" A simple progress bar, accepts a float between 0 and 1 """
-	if VERBOSE:
+	if flags.is_verbose:
 		return
 	barLength = 54 # Modify this to change the length of the progress bar
 	status = ""
@@ -224,7 +216,7 @@ def update_progress(progress):
 	if progress >= 1:
 		progress = 1
 		status = "Done...\r\n"
-	if OK_MODE: # Reverse the loading bar for fun (-k option)
+	if flags.is_okay: # Reverse the loading bar for fun (-k option)
 		if progress <= 0:
 			progress = 0
 			status = "Done..."
@@ -608,84 +600,3 @@ def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
 	print ("             with darks from " + mdarks_dir)
 	print ("              and flats from " + mflats_dir)
 	create_corrected_images(raw_dic, mdarks_dic, mflats_dic, output_dir, stack)
-
-
-def version():
-	""" Print the version of the script """
-	print (PROGRAM_NAME + ": v" + VERSION_STR)
-
-
-def usage():
-	""" Print the usage of the script """
-	version()
-	print ("Usage: python3 " + os.path.basename(sys.argv[0]) + " [options]")
-	print ("Options:")
-	print ("    -h, --help      Displays this help message")
-	print ("    -v, --version   Displays the version of the script")
-	print ("    -V, --verbose   Prints log messages to the terminal screen")
-	print ("    -l light_dir    Uncorrected images directory")
-	print ("    -o output_dir   Correct images output directory")
-	print ("    -d dark_dir     Raw dark images directory")
-	print ("    -D mdark_dir    Master dark images output directory")
-	print ("    -f flat_dir     Raw flat images directory")
-	print ("    -F mflat_dir    Master flat images output directory")
-	print ("    -L run_level    0 -> Process darks, flats, and lights")
-	print ("                    1 -> Process flats and lights using only existing master darks")
-	print ("                    2 -> Process lights using only existing darks and flats")
-
-
-def main():
-	light_dir = "./lights"
-	dark_dir = "./darks"
-	mdark_dir = "./mdarks"
-	flat_dir = "./flats"
-	mflat_dir = "./mflats"
-	output_dir = "./output"
-	level = 0
-
-	OPTIONS = "vhVl:d:D:f:F:o:L:k"
-	LONG_OPTIONS = ["version", "help", "verbose"]
-
-	try:
-		opts, args = getopt.getopt(sys.argv[1:], OPTIONS, LONG_OPTIONS)
-	except getopt.GetoptError as e:
-		print (str(e))
-		usage()
-		sys.exit(1)
-	for o, a in opts:
-		if o in ("-V", "--verbose"):
-			# Enable verbose message output
-			global VERBOSE
-			VERBOSE = True
-			ch.setLevel(logging.INFO)
-		elif o in ("-L"):
-			level = int(a)
-		elif o in ("-l", "--light_dir"):
-			light_dir = a
-		elif o in ("-d", "--dark-dir"):
-			dark_dir = a
-		elif o in ("-D", "--mdark-dir"):
-			mdark_dir = a
-		elif o in ("-f", "--flat-dir"):
-			flat_dir = a
-		elif o in ("-F", "--mflat-dir"):
-			mflat_dir = a
-		elif o in ("-o", "--output-dir"):
-			output_dir = a
-		elif o in ("-v", "--version"):
-			version()
-			sys.exit(0)
-		elif o in ("-h", "--help"):
-			usage()
-			sys.exit(1)
-		elif o in ("-k"):
-			global OK_MODE
-			OK_MODE = True
-
-	# Reduce
-	reduce(dark_dir, mdark_dir, flat_dir, mflat_dir, light_dir, output_dir, stack=False, level=level)
-	return
-
-
-if __name__ == "__main__" and not sys.flags.interactive:
-	main()

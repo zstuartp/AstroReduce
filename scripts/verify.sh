@@ -16,12 +16,12 @@ mkdir -p $_TEST_DATA_DIR \
 rm -f $_TEST_DATA_DIR/output/*.fts
 
 python3 -c "
-import reduce
+import astroreduce
 test_data_dir=\"$_TEST_DATA_DIR/\"
 `cat scripts/reduce-test.py`"
 
 TEST_STATUS=$?
 
-mv *.log $_TEST_LOG_DIR
+mv *.log $_TEST_LOG_DIR 2> /dev/null
 
 exit $TEST_STATUS
