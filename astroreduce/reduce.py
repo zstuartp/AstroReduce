@@ -144,7 +144,7 @@ class AstroImage:
 
 	def loadValues(self):
 		""" Load the important values from the fits header """
-		if fits.header == None:
+		if self.fits_header == None:
 			logger.warning("Attempted to load values from image with no header: " + self.getFullPath())
 		self.binning  = self.fits_header.get("XBINNING")
 		self.ccd_temp = self.fits_header.get("CCD-TEMP")
