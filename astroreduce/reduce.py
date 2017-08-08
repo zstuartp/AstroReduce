@@ -42,7 +42,6 @@
 import argparse
 from astropy.io import fits
 import datetime
-from enum import Enum
 import getopt
 import glob
 import logging
@@ -52,6 +51,7 @@ import os
 import sys
 from time import sleep
 
+from . import astroimage as aimg
 from . import flags
 
 PROGRAM_NAME = "AstroReduce" # TODO: Use a global
@@ -77,126 +77,6 @@ logger.info(PROGRAM_NAME + " Log")
 logger.info(CURRENT_DATE_TIME)
 logger.info("================================================")
 
-#
-# ImageType enum
-#
-class ImageType(Enum):
-	UNKNOWN = -1
-	RAW = 0
-	CORRECTED = 1
-	FLAT = 2
-	MFLAT = 3
-	DARK = 4
-	MDARK = 5
-
-#
-# AstroImage
-# This class provides an easy way to interact with astronomy fits images
-#
-class AstroImage:
-	# Fits info
-	fits_header = None
-	fits_data = None
-
-	# File info
-	file_dir = "."
-	file_name = "null"
-
-	# Image parameters
-	binning = 0
-	ccd_temp = 0
-	date_obs = CURRENT_DATE_TIME
-	exp_time = 0
-	filter = "NA"
-	img_type = ImageType.UNKNOWN
-
-	# Astronomy info
-	object_name = "earth"
-
-	def getFullPath(self):
-		""" Get the full path of the fits image """
-		return os.path.join(self.file_dir, self.file_name)
-
-	def loadImageType(self):
-		""" Get the type enum of an image based on the file name """
-		type = os.path.basename(self.getFullPath()).split("-")[0].lower()
-		self.img_type = { "dark":  ImageType.DARK,
-		                  "mdark": ImageType.MDARK,
-		                  "flat":  ImageType.FLAT,
-		                  "mflat": ImageType.MFLAT }.get(type, ImageType.RAW)
-
-	def loadData(self):
-		""" Load image data """
-		if self.fits_data is None:
-			# Only load the data if it has not already been loaded
-			# If you want to reload the data, use .unloadData() first
-			self.fits_data = fits.getdata(self.getFullPath())
-		return self.fits_data
-
-	def unloadData(self):
-		""" Unload the image data from memory """
-		self.fits_data = None
-
-	def loadHeader(self):
-		""" Load the fits header """
-		self.fits_header = fits.getheader(self.getFullPath())
-		return self.fits_header
-
-	def loadValues(self):
-		""" Load the important values from the fits header """
-		if self.fits_header == None:
-			logger.warning("Attempted to load values from image with no header: " + self.getFullPath())
-		self.binning  = self.fits_header.get("XBINNING")
-		self.ccd_temp = self.fits_header.get("CCD-TEMP")
-		self.date_obs = self.fits_header.get("DATE-OBS")
-		self.exp_time = self.fits_header.get("EXPTIME")
-		self.filter   = self.fits_header.get("FILTER")
-
-	def copyValues(self, astro_img):
-		""" Copy the important header values from another AstroImage """
-		self.binning = astro_img.binning
-		self.ccd_temp = astro_img.ccd_temp
-		self.date_obs = astro_img.date_obs
-		self.exp_time = astro_img.exp_time
-		self.filter = astro_img.filter
-
-	def writeValues(self):
-		""" Write the important header values back to the disk """
-		self.fits_header["XBINNING"] = self.binning
-		self.fits_header["CCD-TEMP"] = self.ccd_temp
-		self.fits_header["DATE-OBS"] = self.date_obs
-		self.fits_header["EXPTIME"]  = self.exp_time
-		self.fits_header["FILTER"]   = self.filter
-
-	def saveToDisk(self):
-		""" Save the fits header and image data to the disk """
-		self.writeValues()
-		fits.writeto(self.getFullPath(), data=self.fits_data, header=self.fits_header, overwrite=True)
-
-	def setFilePath(self, path):
-		""" Set the full path of the file """
-		self.file_dir = os.path.dirname(path)
-		if self.file_dir == "":
-			self.file_dir = "."
-		self.file_name = os.path.basename(path)
-
-	def __init__(self, path=None, new_file=False):
-		if path == None:
-			logger.warning("Cannot load AstroImage from unspecified path")
-			return
-		self.setFilePath(path)
-		if new_file and path != None: # Create a new fits file
-			hdu = fits.PrimaryHDU()
-			hdulist = fits.HDUList([hdu])
-			self.fits_header = hdulist[0].header
-			self.fits_data = hdulist[0].data
-			self.saveToDisk()
-		self.loadHeader() # Load fits header
-		self.loadValues() # Read in important header values
-		self.loadImageType() # Get the type of image (dark, flat, light, etc.)
-		if self.img_type == ImageType.RAW:
-			# If the image is a light image, get the name of the object
-			self.object_name = os.path.basename(path).split("-")[0]
 
 
 def update_progress(progress):
@@ -261,9 +141,9 @@ def find_astro_imgs(path):
 	img_paths = glob.glob(os.path.join(path, "**" ,"*.fits"), recursive=True)
 	img_paths.extend(glob.glob(os.path.join(path, "**" ,"*.fts"), recursive=True))
 	for img_path in img_paths:
-		aimg = AstroImage(img_path)
-		logger.info("Found astronomy fits image: " + aimg.getFullPath())
-		astro_imgs.append(aimg)
+		img = aimg.AstroImage(img_path)
+		logger.info("Found astronomy fits image: " + img.getFullPath())
+		astro_imgs.append(img)
 	return astro_imgs
 
 
@@ -293,7 +173,7 @@ def med_combine(imgs, output_img):
 
 def med_combine_new_file(imgs, output_path):
 	""" Median combine fits images into a new file """
-	output_img = AstroImage(output_path, new_file=True)
+	output_img = aimg.AstroImage(output_path, new_file=True)
 	imgs[0].fits_header.tofile(output_path, overwrite=True)
 	output_img = med_combine(imgs, output_img)
 	return output_img
@@ -462,7 +342,7 @@ def create_master_flat(flats, mdarks_dic, output_dir):
 
 	# Copy important header values
 	mflat.copyValues(flats[0])
-	mflat.img_type = ImageType.MFLAT
+	mflat.img_type = aimg.ImageType.MFLAT
 
 	# Save new master flat to disk and free up memory
 	mflat.saveToDisk()
@@ -520,7 +400,7 @@ def create_corrected_img(key, imgs, mdarks_dic, mflats_dic, output_dir, stack=Fa
 			+ "-Exp" + str(et).replace(".", "s") \
 			+ "-" + fl \
 			+ ".fts")
-		cimg = AstroImage(file_path, new_file=True)
+		cimg = aimg.AstroImage(file_path, new_file=True)
 		cimg.fits_header = img.fits_header
 		cimg.loadValues()
 		if mdark is not None:
@@ -580,22 +460,22 @@ def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
 		# then sort them by exposure time,
 		# Then median combine to master darks in mdarks_dir
 		create_master_darks( \
-			sort_darks(find_astro_imgs_with_type(darks_dir, ImageType.DARK)), \
+			sort_darks(find_astro_imgs_with_type(darks_dir, aimg.ImageType.DARK)), \
 			mdarks_dir)
 
-	mdarks_dic = sort_darks(find_astro_imgs_with_type(mdarks_dir, ImageType.MDARK))
+	mdarks_dic = sort_darks(find_astro_imgs_with_type(mdarks_dir, aimg.ImageType.MDARK))
 
 	if level < 2:
 		# Create master flats
 		print ("Creating master flats in " + mflats_dir + " from " + flats_dir)
 		create_master_flats( \
-			sort_flats(find_astro_imgs_with_type(flats_dir, ImageType.FLAT)), \
+			sort_flats(find_astro_imgs_with_type(flats_dir, aimg.ImageType.FLAT)), \
 			mdarks_dic, mflats_dir)
 
-	mflats_dic = sort_flats(find_astro_imgs_with_type(mflats_dir, ImageType.MFLAT))
+	mflats_dic = sort_flats(find_astro_imgs_with_type(mflats_dir, aimg.ImageType.MFLAT))
 
 	# Find and correct the light images
-	raw_dic = sort_lights(find_astro_imgs_with_type(raw_dir, ImageType.RAW))
+	raw_dic = sort_lights(find_astro_imgs_with_type(raw_dir, aimg.ImageType.RAW))
 	print ("Correcting light images from " + raw_dir)
 	print ("             with darks from " + mdarks_dir)
 	print ("              and flats from " + mflats_dir)
