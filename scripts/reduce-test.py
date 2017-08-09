@@ -61,64 +61,64 @@ lout_data_expect = [1]
 
 # Hot pixels
 hot_data = [
-	np.array([
-		[0, 65000, 0],
-		[0, 0, 0],
-		[0, 0, 0]]),
-	np.array([
-		[0, 0, 0],
-		[0, 0, 65000],
-		[0, 0, 0]]),
-	np.array([
-		[0, 0, 0],
-		[65000, 0, 0],
-		[0, 0, 0]]),
-	np.array([
-		[65000, 0, 0],
-		[0, 0, 0],
-		[0, 0, 65000]]),
-	np.array([
-		[65000, 0, 0],
-		[0, 0, 0],
-		[0, 65000, 0]]),
-	np.array([
-		[0, 0, 0],
-		[0, 0, 65000],
-		[65000, 0, 0]])]
+    np.array([
+        [0, 65000, 0],
+        [0, 0, 0],
+        [0, 0, 0]]),
+    np.array([
+        [0, 0, 0],
+        [0, 0, 65000],
+        [0, 0, 0]]),
+    np.array([
+        [0, 0, 0],
+        [65000, 0, 0],
+        [0, 0, 0]]),
+    np.array([
+        [65000, 0, 0],
+        [0, 0, 0],
+        [0, 0, 65000]]),
+    np.array([
+        [65000, 0, 0],
+        [0, 0, 0],
+        [0, 65000, 0]]),
+    np.array([
+        [0, 0, 0],
+        [0, 0, 65000],
+        [65000, 0, 0]])]
 
 # Flat data
 flat_data_base = np.array([
-		[25832, 23182, 15771],
-		[5226, 9340, 27285],
-		[13194, 17725, 8694]])
+        [25832, 23182, 15771],
+        [5226, 9340, 27285],
+        [13194, 17725, 8694]])
 
 # Dark data
 dark_data_base = np.array([
-		[10, 30, 4],
-		[96, 55, 43],
-		[19, 8, 77]])
+        [10, 30, 4],
+        [96, 55, 43],
+        [19, 8, 77]])
 
 # Light
 light_data_base = np.array([
-		[3500, 5343, 888],
-		[123, 1969, 82],
-		[3695, 8220, 4701]])
+        [3500, 5343, 888],
+        [123, 1969, 82],
+        [3695, 8220, 4701]])
 
 # Create raw flat images
 flat_imgs = []
 print ("Creating raw flats... ", end="")
 i = 0
 for hot in hot_data:
-	flat_img = aimg.AstroImage(test_data_dir+"flats/Flat-"+str(i)+"-"+test_fits_suffix, new_file=True)
-	flat_img.exp_time = 1.0
-	flat_img.filter = "Clear"
-	flat_img.img_type = aimg.ImageType.FLAT
-	flat_img.writeValues()
-	flat_img.fits_data = flat_data_base + dark_data_base + hot
-	flat_img.saveToDisk()
-	flat_img.unloadData()
-	flat_imgs.append(flat_img)
-	i += 1
+    flat_img = aimg.AstroImage(test_data_dir+"flats/Flat-"+str(i)+"-"+test_fits_suffix, new_file=True)
+    flat_img.exp_time = 1.0
+    flat_img.filter = "Clear"
+    flat_img.img_type = aimg.ImageType.FLAT
+    flat_img.writeValues()
+    flat_img.fits_data = flat_data_base + dark_data_base + hot
+    flat_img.saveToDisk()
+    flat_img.unloadData()
+    flat_imgs.append(flat_img)
+    i += 1
 print ("Done.")
 
 # Create raw dark images
@@ -126,55 +126,55 @@ dark_imgs = []
 print ("Creating raw darks... ", end="")
 i = 0
 for hot in hot_data:
-	dark_img = aimg.AstroImage(test_data_dir+"darks/Dark-"+str(i)+"-"+test_fits_suffix, new_file=True)
-	dark_img.exp_time = 1.0
-	dark_img.filter = "Clear"
-	dark_img.img_type = aimg.ImageType.DARK
-	dark_img.writeValues()
-	dark_img.fits_data = dark_data_base + hot
-	dark_img.saveToDisk()
-	dark_img.unloadData()
-	dark_imgs.append(dark_img)
-	i += 1
+    dark_img = aimg.AstroImage(test_data_dir+"darks/Dark-"+str(i)+"-"+test_fits_suffix, new_file=True)
+    dark_img.exp_time = 1.0
+    dark_img.filter = "Clear"
+    dark_img.img_type = aimg.ImageType.DARK
+    dark_img.writeValues()
+    dark_img.fits_data = dark_data_base + hot
+    dark_img.saveToDisk()
+    dark_img.unloadData()
+    dark_imgs.append(dark_img)
+    i += 1
 print ("Done.")
 
 light_imgs = []
 print ("Creating raw lights... ", end="")
 i = 0
 for hot in hot_data:
-	light_img = aimg.AstroImage(test_data_dir+"lights/Light"+str(i)+"-"+test_fits_suffix, new_file=True)
-	light_img.exp_time = 1.0
-	light_img.filter = "Clear"
-	light_img.img_type = aimg.ImageType.RAW
-	light_img.writeValues()
-	light_img.fits_data = (light_data_base * (flat_data_base / np.median(flat_data_base))) + dark_data_base
-	light_img.saveToDisk()
-	light_img.unloadData()
-	light_imgs.append(light_img)
-	i += 1
+    light_img = aimg.AstroImage(test_data_dir+"lights/Light"+str(i)+"-"+test_fits_suffix, new_file=True)
+    light_img.exp_time = 1.0
+    light_img.filter = "Clear"
+    light_img.img_type = aimg.ImageType.RAW
+    light_img.writeValues()
+    light_img.fits_data = (light_data_base * (flat_data_base / np.median(flat_data_base))) + dark_data_base
+    light_img.saveToDisk()
+    light_img.unloadData()
+    light_imgs.append(light_img)
+    i += 1
 print ("Done.")
 
 print ("Reducing...")
 reduce.reduce(
-	darks_dir=test_data_dir + "darks",
-	mdarks_dir=test_data_dir + "mdarks",
-	flats_dir=test_data_dir + "flats",
-	mflats_dir=test_data_dir + "mflats",
-	raw_dir=test_data_dir + "lights",
-	output_dir=test_data_dir + "output",
-	stack=False, level=0)
+    darks_dir=test_data_dir + "darks",
+    mdarks_dir=test_data_dir + "mdarks",
+    flats_dir=test_data_dir + "flats",
+    mflats_dir=test_data_dir + "mflats",
+    raw_dir=test_data_dir + "lights",
+    output_dir=test_data_dir + "output",
+    stack=False, level=0)
 
 print ("Verifying... ", end="")
 out_imgs = reduce.find_astro_imgs(test_data_dir + "output")
 verified = True
 for img in out_imgs:
-	img.loadData()
-	if not np.allclose(img.fits_data, light_data_base):
-		verified = False
-	img.unloadData()
+    img.loadData()
+    if not np.allclose(img.fits_data, light_data_base):
+        verified = False
+    img.unloadData()
 if not verified:
-	print ("FAILED")
-	exit (1)
+    print ("FAILED")
+    exit (1)
 
 print ("PASSED")
 exit (0)
