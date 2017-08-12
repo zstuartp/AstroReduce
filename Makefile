@@ -36,6 +36,13 @@ $(AR_PEX_NAME): $(SOURCES)
 	@echo "Done."
 	@echo "You can run $(PROGRAM_NAME) simply as \"./$(AR_PEX_NAME)\""
 
+# TODO Warn if installing to the virtualenv and not the system
+install:
+	@pip3 install .
+
+uninstall:
+	@pip3 uninstall $(PROGRAM_NAME)
+
 clean-build:
 	@rm -rf $(BUILD_DIR)
 	@rm -f $(AR_PEX_NAME)
