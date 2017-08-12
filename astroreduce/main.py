@@ -8,23 +8,20 @@ import sys
 
 from . import flags
 from . import reduce
+from . import version
 
 PROGRAM_NAME = "AstroReduce"
-VER_MAJOR = 3
-VER_PATCH = 0
-VER_SUB_STR = "-dev"
-VERSION_STR = str(VER_MAJOR) + "." + str(VER_PATCH) + VER_SUB_STR
 
 CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
 
-def version():
+def print_version():
     """ Print the version of the script """
-    print (PROGRAM_NAME + ": v" + VERSION_STR)
+    print (PROGRAM_NAME + ": v" + version.__version__)
 
 
 def usage():
     """ Print the usage of the script """
-    version()
+    print_version()
     print ("Usage: python3 " + os.path.basename(sys.argv[0]) + " [options]")
     print ("Options:")
     print ("    -h, --help      Displays this help message")
@@ -91,7 +88,7 @@ def main():
         elif o in ("-o", "--output-dir"):
             output_dir = a
         elif o in ("-v", "--version"):
-            version()
+            print_version()
             sys.exit(0)
         elif o in ("-h", "--help"):
             usage()
