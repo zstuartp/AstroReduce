@@ -45,7 +45,7 @@ import numpy as np
 import sys
 
 from astroreduce import astroimage as aimg
-from astroreduce import reduce
+from astroreduce import flatfield
 
 if "astroreduce" not in sys.modules or test_data_dir == None:
     print ("This script is not meant to be run directly, please run the test.sh script in the base directory.")
@@ -155,7 +155,7 @@ for hot in hot_data:
 print ("Done.")
 
 print ("Reducing...")
-reduce.reduce(
+flatfield.reduce(
     darks_dir=test_data_dir + "darks",
     mdarks_dir=test_data_dir + "mdarks",
     flats_dir=test_data_dir + "flats",
@@ -165,7 +165,7 @@ reduce.reduce(
     stack=False, level=0)
 
 print ("Verifying... ", end="")
-out_imgs = reduce.find_astro_imgs(test_data_dir + "output")
+out_imgs = flatfield.find_astro_imgs(test_data_dir + "output")
 verified = True
 for img in out_imgs:
     img.loadData()

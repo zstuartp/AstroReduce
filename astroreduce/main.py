@@ -7,7 +7,7 @@ import readline
 import sys
 
 from . import flags
-from . import reduce
+from . import flatfield
 from . import version
 
 PROGRAM_NAME = "AstroReduce"
@@ -97,7 +97,7 @@ def main():
             global OK_MODE
             OK_MODE = True
 
-    reduce.reduce(dark_dir, mdark_dir, flat_dir, mflat_dir, light_dir, output_dir, stack=False, level=level)
+    flatfield.reduce(dark_dir, mdark_dir, flat_dir, mflat_dir, light_dir, output_dir, stack=False, level=level)
     return
 
 if __name__ == "__main__" and not sys.flags.interactive:
