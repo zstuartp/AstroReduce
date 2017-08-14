@@ -1,4 +1,4 @@
-PROGRAM_NAME=AstroReduce
+PROGRAM_NAME=astroreduce
 PROGRAM_SHORT_NAME=ar
 VENV_DIR=reduce-venv
 VERIFY_SCRIPT=scripts/verify.sh
@@ -50,6 +50,9 @@ clean-build:
 clean-venv:
 	@rm -rf $(VENV_DIR)
 
-clean: clean-build
+clean-eggs:
+	@rm -rf *.egg*
+
+clean: clean-build clean-eggs
 
 dist-clean: clean clean-venv
