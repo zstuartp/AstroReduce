@@ -22,5 +22,9 @@ setup(
 	author="",
 	description="Astronomy data reduction program",
 	packages=[PKG_NAME],
-        include_package_data=True
+        include_package_data=True,
+        install_requires=[
+            "astropy>=2.0",
+            "numpy>=1.13.1",
+        ],
 )
