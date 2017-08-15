@@ -43,6 +43,8 @@ install:
 uninstall:
 	@pip3 uninstall $(PROGRAM_NAME)
 
+reinstall: uninstall install
+
 clean-build:
 	@rm -rf $(BUILD_DIR)
 	@rm -f $(AR_PEX_NAME)
