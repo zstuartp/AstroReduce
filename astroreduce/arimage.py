@@ -1,10 +1,16 @@
 import datetime
 from enum import Enum
+import glob
 import os
+from typing import List, NewType
 
 from astropy.io import fits
 
+from . import log
+
 CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
+
+logger = log.get_logger()
 
 #
 # ImageType enum
@@ -19,10 +25,10 @@ class ImageType(Enum):
     MDARK = 5
 
 #
-# AstroImage
+# ARImage
 # This class provides an easy way to interact with astronomy fits images
 #
-class AstroImage:
+class ARImage:
     # Fits info
     fits_header = None
     fits_data = None
@@ -37,7 +43,6 @@ class AstroImage:
     date_obs = CURRENT_DATE_TIME
     exp_time = 0
     filter = "NA"
-    img_type = ImageType.UNKNOWN
 
     # Astronomy info
     object_name = "earth"
@@ -45,14 +50,6 @@ class AstroImage:
     def getFullPath(self):
         """ Get the full path of the fits image """
         return os.path.join(self.file_dir, self.file_name)
-
-    def loadImageType(self):
-        """ Get the type enum of an image based on the file name """
-        type = os.path.basename(self.getFullPath()).split("-")[0].lower()
-        self.img_type = { "dark":  ImageType.DARK,
-                          "mdark": ImageType.MDARK,
-                          "flat":  ImageType.FLAT,
-                          "mflat": ImageType.MFLAT }.get(type, ImageType.RAW)
 
     def loadData(self):
         """ Load image data """
@@ -68,18 +65,27 @@ class AstroImage:
 
     def loadHeader(self):
         """ Load the fits header """
-        self.fits_header = fits.getheader(self.getFullPath())
+        if self.fits_header is None:
+            self.fits_header = fits.getheader(self.getFullPath())
         return self.fits_header
+
+    def unloadHeader(self):
+        """ Unload the fits header """
+        self.fits_header = None
 
     def loadValues(self):
         """ Load the important values from the fits header """
-        if self.fits_header == None:
-            logger.warning("Attempted to load values from image with no header: " + self.getFullPath())
+        unload_after = False
+        if self.fits_header is None:
+            unload_after = True
+            self.loadHeader()
         self.binning  = self.fits_header.get("XBINNING")
         self.ccd_temp = self.fits_header.get("CCD-TEMP")
         self.date_obs = self.fits_header.get("DATE-OBS")
         self.exp_time = self.fits_header.get("EXPTIME")
         self.filter   = self.fits_header.get("FILTER")
+        if unload_after:
+            self.unloadHeader()
 
     def copyValues(self, astro_img):
         """ Copy the important header values from another AstroImage """
@@ -91,11 +97,17 @@ class AstroImage:
 
     def writeValues(self):
         """ Write the important header values back to the disk """
+        unload_after = False
+        if self.fits_header is None:
+            unload_after = True
+            self.loadHeader()
         self.fits_header["XBINNING"] = self.binning
         self.fits_header["CCD-TEMP"] = self.ccd_temp
         self.fits_header["DATE-OBS"] = self.date_obs
         self.fits_header["EXPTIME"]  = self.exp_time
         self.fits_header["FILTER"]   = self.filter
+        if unload_after:
+            self.unloadHeader()
 
     def saveToDisk(self):
         """ Save the fits header and image data to the disk """
@@ -120,9 +132,33 @@ class AstroImage:
             self.fits_header = hdulist[0].header
             self.fits_data = hdulist[0].data
             self.saveToDisk()
-        self.loadHeader() # Load fits header
         self.loadValues() # Read in important header values
-        self.loadImageType() # Get the type of image (dark, flat, light, etc.)
-        if self.img_type == ImageType.RAW:
-            # If the image is a light image, get the name of the object
-            self.object_name = os.path.basename(path).split("-")[0]
+
+def find_arimgs_in_dir(directory: str, recursive=True) -> List[ARImage]:
+    """ Find and create ARImage objects for fits images in a "directory" """
+    arimgs = []
+
+    try:
+        # Get a list of all files ending in ".fits" and ".fts" in "directory"
+        img_paths = glob.glob(os.path.join(directory, "**", "*.fits"), recursive=recursive)
+        img_paths.extend(glob.glob(os.path.join(directory, "**", "*.fts"), recursive=recursive))
+    except OSError as err:
+        logger.error("Failed to open directory: " + directory)
+        return None
+
+    for img_path in img_paths:
+        # Load each found fits image as an ARImage and append it to the arimgs list
+        img = ARImage(img_path)
+        logger.info("Found fits image: " + img.getFullPath())
+        arimgs.append(img)
+        
+    return arimgs
+
+def find_arimgs_from_list_file(list_path: str) -> List[ARImage]:
+    """ Find and create ARImage objects for fits images listed in a text file """
+    print("TODO: Impliment me: find_arimgs_from_list_file")
+
+def unload_data_arimgs(arimgs: ARImage):
+    """ Unload image data from memory for a list of ARImages """
+    for img in arimgs:
+        img.unloadData()

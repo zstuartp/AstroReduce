@@ -40,43 +40,32 @@
 ################################################################################
 
 import argparse
-from astropy.io import fits
 import datetime
+from enum import Enum
 import getopt
 import glob
 import logging
 from threading import Thread
+from typing import Dict, List, Type
 import numpy as np
 import os
 import sys
 from time import sleep
 
-from . import astroimage as aimg
+from . import arimage
 from . import flags
+from . import log
 
-PROGRAM_NAME = "AstroReduce" # TODO: Use a global
+logger = log.get_logger()
 
 CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
 
-#
-# Setup logging
-#
-logger = logging.getLogger(PROGRAM_NAME + " Log")
-fh = logging.FileHandler("reduce-" + CURRENT_DATE_TIME.replace("-", "").replace("T", "at").replace(":", "") + ".log")
-ch = logging.StreamHandler()
-log_format_file = logging.Formatter("%(asctime)s::%(levelname)s -- %(message)s")
-log_format_console = logging.Formatter("%(levelname)s -- %(message)s")
-fh.setFormatter(log_format_file)
-ch.setFormatter(log_format_console)
-logger.setLevel(logging.DEBUG)
-ch.setLevel(logging.WARNING)
-logger.addHandler(ch)
-logger.addHandler(fh)
-logger.info("================================================")
-logger.info(PROGRAM_NAME + " Log")
-logger.info(CURRENT_DATE_TIME)
-logger.info("================================================")
-
+class ImageKind(Enum):
+    UNKNOWN = -1
+    RAW = 0
+    DARK = 1
+    FLAT = 2
+    LIGHT = 3
 
 
 def update_progress(progress):
@@ -135,31 +124,6 @@ def update_progress_on_threads(threads):
             i = 0
 
 
-def find_astro_imgs(path):
-    """ Find all fits files in the specified path """
-    astro_imgs = []
-    img_paths = glob.glob(os.path.join(path, "**" ,"*.fits"), recursive=True)
-    img_paths.extend(glob.glob(os.path.join(path, "**" ,"*.fts"), recursive=True))
-    for img_path in img_paths:
-        img = aimg.AstroImage(img_path)
-        logger.info("Found astronomy fits image: " + img.getFullPath())
-        astro_imgs.append(img)
-    return astro_imgs
-
-
-def unload_astro_imgs(astro_imgs):
-    """ Free memory from a list of AstroImages """
-    for img in astro_imgs:
-        img.unloadData()
-
-
-def find_astro_imgs_with_type(path, img_type):
-    """ Load the paths of all fits images with the given type into an array """
-    imgs = find_astro_imgs(path)
-    imgs[:] = [img for img in imgs if (img.img_type == img_type)]
-    return imgs
-
-
 def med_combine(imgs, output_img):
     """ Median combine fits images """
     data_in = []
@@ -173,13 +137,15 @@ def med_combine(imgs, output_img):
 
 def med_combine_new_file(imgs, output_path):
     """ Median combine fits images into a new file """
-    output_img = aimg.AstroImage(output_path, new_file=True)
+    output_img = arimage.ARImage(output_path, new_file=True)
+    imgs[0].loadHeader()
     imgs[0].fits_header.tofile(output_path, overwrite=True)
+    imgs[0].unloadHeader()
     output_img = med_combine(imgs, output_img)
     return output_img
 
 
-def sort_darks(darks_unsorted):
+def sort_darks(darks_unsorted: List[arimage.ARImage]):
     """ Sort dark images into a dictionary with "exp_time" as the key """
     if bool(darks_unsorted) == False:
         return
@@ -196,7 +162,7 @@ def sort_darks(darks_unsorted):
     return darks
 
 
-def sort_flats(flats_unsorted):
+def sort_flats(flats_unsorted: List[arimage.ARImage]):
     """ Sort flat images into a dictionary with "filter" as the key """
     if bool(flats_unsorted) == False:
         return None
@@ -213,7 +179,7 @@ def sort_flats(flats_unsorted):
     return flats
 
 
-def sort_lights(lights_unsorted):
+def sort_lights(lights_unsorted: List[arimage.ARImage]):
     """ Sort light images by object, exposure time, and filter """
     if bool(lights_unsorted) == False:
         return None
@@ -231,36 +197,82 @@ def sort_lights(lights_unsorted):
     return lights
 
 
-def dark_correct(img, dark):
-    """ Dark corrects image (Duh! Read the function name next time!) """
-    if img is None:
-        logger.error("Attempted to dark correct a non-existing light image")
-        return
-    if dark is None:
-        logger.error("Attempted to dark correct with a non-existing dark image")
-        return
+def sort_arimgs_as_kind(arimgs: List[Type[arimage.ARImage]], img_kind: ImageKind) -> Dict[any, List]:
+    sorted_arimgs = None
+
+    if img_kind == ImageKind.DARK:
+        sorted_arimgs = sort_darks(arimgs)
+    elif img_kind == ImageKind.FLAT:
+        sorted_arimgs = sort_flats(arimgs)
+    elif img_kind == ImageKind.LIGHT:
+        sorted_arimgs = sort_lights(arimgs)
+    else:
+        logger.warning("Unable to sort image kind: " + str(img_kind))
+
+    return sorted_arimgs
+
+
+def dark_correct_arimg(img: arimage.ARImage, dark: arimage.ARImage) -> arimage.ARImage:
+    """ Dark corrects image """
     logger.info("Dark correcting image: " + img.getFullPath())
     logger.info("            with dark: " + dark.getFullPath())
+
+    # Load image data into memory if it is not already loaded
     img.loadData()
     dark.loadData()
+
     img.fits_data = img.fits_data - dark.fits_data
+
     return img
 
 
-def flat_correct(img, flat):
+def dark_correct_arimgs(imgs: List[arimage.ARImage], darks_sorted: Dict[int, arimage.ARImage]) -> List[arimage.ARImage]:
+    for img in imgs:
+        et = int(round(img.exp_time))
+        dark = darks_sorted.get(et)
+        if dark == None:
+            # No dark found with required exposure time, ignore this flat
+            logger.warning("Dropping flat without matching dark (exp_time=" + str(et) + "): " + img.getFullPath())
+            imgs.remove(img)
+            continue
+        dark_correct_arimg(img, dark[0])
+
+    # Clean up loaded darks
+    for darks in darks_sorted.values():
+        arimage.unload_data_arimgs(darks)
+
+    return imgs
+
+
+def flat_correct_arimg(img: arimage.ARImage, flat: arimage.ARImage) -> arimage.ARImage:
     """ Flat corrects the image """
-    if img is None:
-        logger.error("Attempted to flat correct a non-existing light image")
-        return
-    if flat is None:
-        logger.error("Attempted to flat correct with a non-existing flat image")
-        return
     logger.info("Flat correcting image: " + img.getFullPath())
     logger.info("            with flat: " + flat.getFullPath())
+
     img.loadData()
     flat.loadData()
+
     img.fits_data = img.fits_data / flat.fits_data
+
     return img
+
+
+def flat_correct_arimgs(imgs: List[arimage.ARImage], flats_sorted: Dict[str, arimage.ARImage]) -> List[arimage.ARImage]:
+    for img in imgs:
+        fl = img.filter
+        mflat = mflats_dic.get(fl)
+        if mflat == None: # No flat was found with the correct filter
+            logger.warning("Skipping image with no matching master flat(filter=" + fl + "): " + imgs[0].getFullPath())
+            imgs.remove(img)
+            continue
+        flat.loadData(keep_loaded=True)
+        flat_correct_arimg(img, flat[0])
+
+    # Clean up loaded flats
+    for flats in flats_sorted.value():
+        arimage.unload_data_arimgs(flats, force_unload=True)
+
+    return imgs
 
 
 def create_master_dark(darks, output_dir):
@@ -274,7 +286,7 @@ def create_master_dark(darks, output_dir):
 
     # Median combine
     mdark = med_combine_new_file(darks, path)
-    unload_astro_imgs(darks)
+    arimage.unload_data_arimgs(darks)
 
     # Save
     mdark.copyValues(darks[0])
@@ -283,14 +295,14 @@ def create_master_dark(darks, output_dir):
     logger.info("Created master dark with exp_time=" + str(darks[0].exp_time) + ": " + path)
 
 
-def create_master_darks(darks_dic, output_dir):
-    """ Create the master dark images """
-    if not bool(darks_dic):
+def create_master_darks(darks_sorted: Dict, output_dir: str):
+    """ Create the master dark images from sorted darks """
+    if not bool(darks_sorted):
         logger.warning("No darks are available to median combine")
         return
 
     threads = []
-    for darks in darks_dic.values():
+    for darks in darks_sorted.values():
         # Spawn a process for each group of darks
         t = Thread(target=create_master_dark, args=(darks, output_dir))
         t.start()
@@ -316,7 +328,7 @@ def dark_correct_flats(flats, mdarks_dic):
             flat.unloadData()
             flats.remove(flat)
             continue
-        dark_correct(flat, mdark[0])
+        dark_correct_arimg(flat, mdark[0])
     return flats
 
 
@@ -334,7 +346,7 @@ def create_master_flat(flats, mdarks_dic, output_dir):
     # Median combine to a new fits image
     mflat = med_combine_new_file(flats, path)
     # Free up memory
-    unload_astro_imgs(flats)
+    arimage.unload_data_arimgs(flats)
 
     # Normalize
     data = mflat.fits_data
@@ -342,7 +354,7 @@ def create_master_flat(flats, mdarks_dic, output_dir):
 
     # Copy important header values
     mflat.copyValues(flats[0])
-    mflat.img_type = aimg.ImageType.MFLAT
+    mflat.img_type = arimage.ImageType.MFLAT
 
     # Save new master flat to disk and free up memory
     mflat.saveToDisk()
@@ -392,7 +404,7 @@ def create_corrected_img(key, imgs, mdarks_dic, mflats_dic, output_dir, stack=Fa
             mflat = mflat[0]
 
     i = 0
-    for img in imgs: # Copy the raw light to a new file, then dark correct and flat correct
+    for img in imgs: # Copy the raw light to a new file, then (dark correct and flat correct
         file_path = os.path.join(output_dir, on \
             + "-" + img.date_obs.replace("-", "").replace("T", "at").replace(":", "") \
             + "-Temp" + str(int(round(img.ccd_temp))).replace("-", "m") \
@@ -400,15 +412,15 @@ def create_corrected_img(key, imgs, mdarks_dic, mflats_dic, output_dir, stack=Fa
             + "-Exp" + str(et).replace(".", "s") \
             + "-" + fl \
             + ".fts")
-        cimg = aimg.AstroImage(file_path, new_file=True)
+        cimg = arimage.ARImage(file_path, new_file=True)
         cimg.fits_header = img.fits_header
         cimg.loadValues()
         if mdark is not None:
-            dark_correct(img, mdark)
+            dark_correct_arimg(img, mdark)
         else:
             logger.warning("No dark image found for light: " + cimg.getFullPath())
         if mflat is not None:
-            flat_correct(img, mflat)
+            flat_correct_arimg(img, mflat)
         else:
             logger.warning("No flat image found for light: " + cimg.getFullPath())
         cimg.fits_data = img.fits_data
@@ -449,34 +461,32 @@ def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=
 def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
            mflats_dir="./mflats", raw_dir="./lights", output_dir="./output", \
            stack=False, level=0):
-    mdarks_dic = None
-    mflats_dic = None
-    raw_dic = None
 
     if level < 1:
         # Create master darks
         print ("Creating master darks in " + mdarks_dir + " from " + darks_dir)
-        # Find all dark images in darks_dir,
-        # then sort them by exposure time,
-        # Then median combine to master darks in mdarks_dir
-        create_master_darks( \
-            sort_darks(find_astro_imgs_with_type(darks_dir, aimg.ImageType.DARK)), \
-            mdarks_dir)
+        darks = arimage.find_arimgs_in_dir(darks_dir)
+        darks_sorted = sort_arimgs_as_kind(darks, ImageKind.DARK)
+        create_master_darks(darks_sorted, mdarks_dir)
 
-    mdarks_dic = sort_darks(find_astro_imgs_with_type(mdarks_dir, aimg.ImageType.MDARK))
+    # Find master darks and sort
+    mdarks = arimage.find_arimgs_in_dir(mdarks_dir)
+    mdarks_sorted = sort_arimgs_as_kind(mdarks, ImageKind.DARK)
 
     if level < 2:
         # Create master flats
         print ("Creating master flats in " + mflats_dir + " from " + flats_dir)
-        create_master_flats( \
-            sort_flats(find_astro_imgs_with_type(flats_dir, aimg.ImageType.FLAT)), \
-            mdarks_dic, mflats_dir)
+        flats = arimage.find_arimgs_in_dir(flats_dir)
+        flats_sorted = sort_arimgs_as_kind(flats, ImageKind.FLAT)
+        create_master_flats(flats_sorted, mdarks_sorted, mflats_dir)
 
-    mflats_dic = sort_flats(find_astro_imgs_with_type(mflats_dir, aimg.ImageType.MFLAT))
+    mflats = arimage.find_arimgs_in_dir(mflats_dir)
+    mflats_sorted = sort_arimgs_as_kind(mflats, ImageKind.FLAT)
 
     # Find and correct the light images
-    raw_dic = sort_lights(find_astro_imgs_with_type(raw_dir, aimg.ImageType.RAW))
+    raw_lights = arimage.find_arimgs_in_dir(raw_dir)
+    raw_sorted = sort_arimgs_as_kind(raw_lights, ImageKind.LIGHT)
     print ("Correcting light images from " + raw_dir)
     print ("             with darks from " + mdarks_dir)
     print ("              and flats from " + mflats_dir)
-    create_corrected_images(raw_dic, mdarks_dic, mflats_dic, output_dir, stack)
+    create_corrected_images(raw_sorted, mdarks_sorted, mflats_sorted, output_dir, stack)

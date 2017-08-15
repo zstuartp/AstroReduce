@@ -44,7 +44,7 @@
 import numpy as np
 import sys
 
-from astroreduce import astroimage as aimg
+from astroreduce import arimage
 from astroreduce import flatfield
 
 if "astroreduce" not in sys.modules or test_data_dir == None:
@@ -109,10 +109,10 @@ flat_imgs = []
 print ("Creating raw flats... ", end="")
 i = 0
 for hot in hot_data:
-    flat_img = aimg.AstroImage(test_data_dir+"flats/Flat-"+str(i)+"-"+test_fits_suffix, new_file=True)
+    flat_img = arimage.ARImage(test_data_dir+"flats/Flat-"+str(i)+"-"+test_fits_suffix, new_file=True)
     flat_img.exp_time = 1.0
     flat_img.filter = "Clear"
-    flat_img.img_type = aimg.ImageType.FLAT
+    flat_img.img_type = arimage.ImageType.FLAT
     flat_img.writeValues()
     flat_img.fits_data = flat_data_base + dark_data_base + hot
     flat_img.saveToDisk()
@@ -126,10 +126,10 @@ dark_imgs = []
 print ("Creating raw darks... ", end="")
 i = 0
 for hot in hot_data:
-    dark_img = aimg.AstroImage(test_data_dir+"darks/Dark-"+str(i)+"-"+test_fits_suffix, new_file=True)
+    dark_img = arimage.ARImage(test_data_dir+"darks/Dark-"+str(i)+"-"+test_fits_suffix, new_file=True)
     dark_img.exp_time = 1.0
     dark_img.filter = "Clear"
-    dark_img.img_type = aimg.ImageType.DARK
+    dark_img.img_type = arimage.ImageType.DARK
     dark_img.writeValues()
     dark_img.fits_data = dark_data_base + hot
     dark_img.saveToDisk()
@@ -142,10 +142,10 @@ light_imgs = []
 print ("Creating raw lights... ", end="")
 i = 0
 for hot in hot_data:
-    light_img = aimg.AstroImage(test_data_dir+"lights/Light"+str(i)+"-"+test_fits_suffix, new_file=True)
+    light_img = arimage.ARImage(test_data_dir+"lights/Light"+str(i)+"-"+test_fits_suffix, new_file=True)
     light_img.exp_time = 1.0
     light_img.filter = "Clear"
-    light_img.img_type = aimg.ImageType.RAW
+    light_img.img_type = arimage.ImageType.RAW
     light_img.writeValues()
     light_img.fits_data = (light_data_base * (flat_data_base / np.median(flat_data_base))) + dark_data_base
     light_img.saveToDisk()
@@ -165,7 +165,7 @@ flatfield.reduce(
     stack=False, level=0)
 
 print ("Verifying... ", end="")
-out_imgs = flatfield.find_astro_imgs(test_data_dir + "output")
+out_imgs = arimage.find_arimgs_in_dir(test_data_dir + "output")
 verified = True
 for img in out_imgs:
     img.loadData()
