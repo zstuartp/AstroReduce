@@ -13,18 +13,6 @@ CURRENT_DATE_TIME = datetime.datetime.now().strftime("%y-%m-%dT%H:%M:%S")
 logger = log.get_logger()
 
 #
-# ImageType enum
-#
-class ImageType(Enum):
-    UNKNOWN = -1
-    RAW = 0
-    CORRECTED = 1
-    FLAT = 2
-    MFLAT = 3
-    DARK = 4
-    MDARK = 5
-
-#
 # ARImage
 # This class provides an easy way to interact with astronomy fits images
 #

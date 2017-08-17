@@ -354,7 +354,7 @@ def create_master_flat(flats, mdarks_dic, output_dir):
 
     # Copy important header values
     mflat.copyValues(flats[0])
-    mflat.img_type = arimage.ImageType.MFLAT
+    mflat.img_type = ImageKind.FLAT
 
     # Save new master flat to disk and free up memory
     mflat.saveToDisk()
