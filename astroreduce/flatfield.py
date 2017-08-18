@@ -45,7 +45,6 @@ from enum import Enum
 import getopt
 import glob
 import logging
-from threading import Thread
 from typing import Dict, List, Type
 import numpy as np
 import os
@@ -54,6 +53,7 @@ from time import sleep
 
 from . import arimage
 from . import flags
+from . import jobs
 from . import log
 
 logger = log.get_logger()
@@ -301,14 +301,14 @@ def create_master_darks(darks_sorted: Dict, output_dir: str):
         logger.warning("No darks are available to median combine")
         return
 
-    threads = []
     for darks in darks_sorted.values():
-        # Spawn a process for each group of darks
-        t = Thread(target=create_master_dark, args=(darks, output_dir))
-        t.start()
-        threads.append(t)
+        # Create a job thread for each group of darks
+        job = jobs.Job(target=create_master_dark, args=(darks, output_dir))
+        jobs.push_job(job)
 
-    update_progress_on_threads(threads)
+    # Start processing the job queue and wait
+    jobs.start_jobs()
+    jobs.wait_done()
 
 
 def dark_correct_flats(flats, mdarks_dic):
@@ -368,14 +368,14 @@ def create_master_flats(flats_dic, mdarks_dic, output_dir):
         logger.warning("No flats are available to median combine")
         return
 
-    threads = []
     for flats in flats_dic.values():
-        # Spawn a process for each group of flats
-        t = Thread(target=create_master_flat, args=(flats, mdarks_dic, output_dir))
-        t.start()
-        threads.append(t)
-
-    update_progress_on_threads(threads)
+        # Create a job thread for each group of flats
+        job = jobs.Job(target=create_master_flat, args=(flats, mdarks_dic, output_dir))
+        jobs.push_job(job)
+    
+    # Start processing the job queue and wait
+    jobs.start_jobs()
+    jobs.wait_done()
 
 
 def create_corrected_img(key, imgs, mdarks_dic, mflats_dic, output_dir, stack=False):
@@ -448,14 +448,14 @@ def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=
         logger.warning("No corrections possible, skipping all light images")
         return
 
-    threads = []
     for key, imgs in imgs_dic.items():
-        # Spawn a process for each group of lights
-        t = Thread(target=create_corrected_img, args=(key, imgs, mdarks_dic, mflats_dic, output_dir))
-        t.start()
-        threads.append(t)
+        # Create a job thread for each group of lights
+        job = jobs.Job(target=create_corrected_img, args=(key, imgs, mdarks_dic, mflats_dic, output_dir))
+        jobs.push_job(job)
 
-    update_progress_on_threads(threads)
+    # Start processing the job queue and wait
+    jobs.start_jobs()
+    jobs.wait_done()
 
 
 def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
