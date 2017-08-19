@@ -1,3 +1,6 @@
+master: No support for Travis CI yet
+v3-dev: [![Build Status](https://travis-ci.org/zstuartp/AstroReduce.svg?branch=v3-dev)](https://travis-ci.org/zstuartp/AstroReduce)
+
 # AstroReduce
 This is a flat-field correction script which makes use of the Astropy and Numpy
 libraries. The script automatically median combines raw dark fits images with
