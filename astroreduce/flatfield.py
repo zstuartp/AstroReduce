@@ -41,7 +41,7 @@ import sys
 from time import sleep
 
 from . import arimage
-from . import flags
+from . import env
 from . import jobs
 from . import log
 
@@ -59,7 +59,7 @@ class ImageKind(Enum):
 
 def update_progress(progress):
     """ A simple progress bar, accepts a float between 0 and 1 """
-    if flags.is_verbose:
+    if env.get("VERBOSE"):
         return
     barLength = 54 # Modify this to change the length of the progress bar
     status = ""

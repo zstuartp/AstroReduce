@@ -6,7 +6,7 @@ import os
 import readline
 import sys
 
-from . import flags
+from . import env
 from . import flatfield as ff
 from . import log
 from . import version
@@ -69,9 +69,8 @@ def main():
         sys.exit(1)
     for o, a in opts:
         if o in ("-V", "--verbose"):
-            # Enable verbose message output
-            flags.is_verbose = True
-            ch.setLevel(logging.INFO)
+            # Enable verbose logging output
+            env.set("VERBOSE",  True)
         elif o in ("-i"):
             flags.is_interactive = True
         elif o in ("-L"):
@@ -95,9 +94,10 @@ def main():
             usage()
             sys.exit(1)
         elif o in ("-k"):
-            global OK_MODE
-            OK_MODE = True
+            env.set("OK_MODE", True)
 
+    env.import_sys_env()
+    
     ff.reduce(
         darks_dir=dark_dir,
         mdarks_dir=mdark_dir,
