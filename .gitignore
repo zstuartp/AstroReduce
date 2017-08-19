@@ -38,3 +38,4 @@ Module.symvers
 
 !.gitignore
 !__*__.py
+!.travis.yml
