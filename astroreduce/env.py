@@ -95,4 +95,4 @@ def import_sys_env():
 
 def export_var(key: str):
     value = get(key)
-    os.environ.set(key, value)
+    os.environ[key] = value
