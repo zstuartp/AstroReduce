@@ -1,4 +1,3 @@
-master: No support for Travis CI yet
 v3-dev: [![Build Status](https://travis-ci.org/zstuartp/AstroReduce.svg?branch=v3-dev)](https://travis-ci.org/zstuartp/AstroReduce)
 
 # AstroReduce
