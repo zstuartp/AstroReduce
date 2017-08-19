@@ -5,12 +5,14 @@ python:
   - "3.6"
   - "3.6-dev" # 3.6 development branch
 
+os:
+  - linux
+  - osx
+
 # command to install dependencies
 install: "pip install -r requirements-build.txt"
 # command to run tests
 script:
   - make test-all
   - make build
-
-sudo: false
-dist: trusty
+  
