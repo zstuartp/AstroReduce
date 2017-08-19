@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # BSD 3-Clause License
 #
 # Copyright (c) 2017, Zackary Parsons
@@ -29,15 +27,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-################################################################################
-#
-# For information on using this program, view the README.
-#
-# - Contact "Zackary Parsons <parsonsz@coyote.csusb.edu>"
-#   with any questions, comments, and/or improvements
-#
-################################################################################
 
 import argparse
 import datetime
