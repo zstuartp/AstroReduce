@@ -14,6 +14,7 @@ os:
 install: "pip install -r requirements-build.txt"
 # command to run tests
 script:
-  - make test-all
-  - make build
+  - make test-all # Run tests
+  - make build	  # Build pex package
+  - make install  # Install non-pex package with pip
   
