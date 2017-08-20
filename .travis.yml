@@ -17,6 +17,7 @@ install:
 # command to run tests
 script:
   - coverage run --source=astroreduce setup.py test  # Run tests
+  - make verify
   - make build	  # Build pex package
   - make install  # Install non-pex package with pip
 
