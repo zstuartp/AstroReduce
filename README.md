@@ -1,5 +1,5 @@
 v3-dev: [![Build Status](https://travis-ci.org/zstuartp/AstroReduce.svg?branch=v3-dev)](https://travis-ci.org/zstuartp/AstroReduce)
-[![Coverage Status](https://coveralls.io/repos/github/zstuartp/AstroReduce/badge.svg?branch=master)](https://coveralls.io/github/zstuartp/AstroReduce?branch=v3-dev)
+[![Coverage Status](https://coveralls.io/repos/github/zstuartp/AstroReduce/badge.svg?branch=v3-dev)](https://coveralls.io/github/zstuartp/AstroReduce?branch=v3-dev)
 
 # AstroReduce
 This is a flat-field correction script which makes use of the Astropy and Numpy
