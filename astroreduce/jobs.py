@@ -34,6 +34,9 @@ from threading import Thread
 from time import sleep
 from typing import Callable, Tuple
 
+from . import env
+from . import progress
+
 _job_queue = Queue()                     # FIFO job queue
 _cpu_count = multiprocessing.cpu_count() # Max threads = _cpu_count
 
@@ -77,6 +80,19 @@ def start_jobs(max_threads: int = 0):
         t.start()
 
 
-def wait_done():
+def wait_done(show_progress=True):
     """ Wait until all jobs have finished running """
+    complete_prog_bar = False # If true, set progress to 100% when done
+    if show_progress and not env.get("VERBOSE"):
+        complete_prog_bar = True
+        qsize_init = _job_queue.qsize()
+        progress.update(0)
+        while not _job_queue.empty():
+            prog = (qsize_init - _job_queue.qsize()) / qsize_init
+            progress.update(prog)
+            sleep(0.001)
+
     _job_queue.join()
+
+    if complete_prog_bar:
+        progress.update(1)
