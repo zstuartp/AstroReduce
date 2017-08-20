@@ -10,10 +10,15 @@ os:
   - linux
 
 # command to install dependencies
-install: "pip install -r requirements-build.txt"
+install:
+  - pip install -r requirements-build.txt
+  - pip install coveralls
+
 # command to run tests
 script:
-  - make test-all # Run tests
+  - coverage run --source=astroreduce setup.py test  # Run tests
   - make build	  # Build pex package
   - make install  # Install non-pex package with pip
-  
+
+after_success:
+  coveralls
