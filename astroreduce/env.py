@@ -61,7 +61,7 @@ def add_hook(key: str, hook: Callable):
     hooks.append(hook)
 
 
-def set(key: str, value: any, export: bool=False):
+def set(key: str, value: str, export: bool=False):
     """ Set the environmental variable given by "key=value" """
     _vars[key] = value
     if export:
@@ -70,7 +70,7 @@ def set(key: str, value: any, export: bool=False):
     _run_var_hooks(key, run_global_hooks=True)
 
 
-def get(key: str) -> any:
+def get(key: str) -> str:
     """ Get the environmental variable with the name "key" """
     value = _vars.get(key)
     if value is None:

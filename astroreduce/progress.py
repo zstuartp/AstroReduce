@@ -17,7 +17,7 @@ def update(progress):
     if progress >= 1:
         progress = 1
         status = "Done...\r\n"
-    if env.get("OK_MODE"): # Reverse the loading bar for fun (-k option)
+    if env.get("OK_MODE") == "True": # Reverse the loading bar for fun (-k option)
         if progress <= 0:
             progress = 0
             status = "Done..."

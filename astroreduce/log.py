@@ -10,13 +10,13 @@ logger = None
 ch = None
 
 
-def _log_var_change(key="", value=False):
-    logger.debug("Local environment set: " + key + "=" + str(value))
+def _log_var_change(key: str="", value: str="False"):
+    logger.debug("Local environment set: " + key + "=" + value)
 
 
-def _set_verbose_hook(key="VERBOSE", value=False):
+def _set_verbose_hook(key: str="VERBOSE", value: str="False"):
     """ Enable verbose console output """
-    if value:
+    if value == "True":
         ch.setLevel(logging.INFO)
     else:
         ch.setLevel(logging.WARNING)

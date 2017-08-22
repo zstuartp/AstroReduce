@@ -70,7 +70,7 @@ def main():
     for o, a in opts:
         if o in ("-V", "--verbose"):
             # Enable verbose logging output
-            env.set("VERBOSE",  True)
+            env.set("VERBOSE",  "True")
         elif o in ("-i"):
             flags.is_interactive = True
         elif o in ("-L"):
@@ -94,7 +94,7 @@ def main():
             usage()
             sys.exit(1)
         elif o in ("-k"):
-            env.set("OK_MODE", True)
+            env.set("OK_MODE", "True")
 
     env.import_sys_env()
     
