@@ -26,7 +26,7 @@ $(VENV_DIR)/bin/activate: requirements-build.txt
 	@touch $(VENV_DIR)/bin/activate
 	@echo "Done. Run \"source $(VENV_DIR)/bin/activate\" to activate the virtualenv"
 
-test-all:
+test:
 	@$(REQ_PYTHON_VER) setup.py test
 
 # Build the portable python executable (.pex) package 
