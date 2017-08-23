@@ -139,7 +139,7 @@ def find_arimgs_in_dir(directory: str, recursive=True) -> List[ARImage]:
         img = ARImage(img_path)
         logger.info("Found fits image: " + img.getFullPath())
         arimgs.append(img)
-        
+
     return arimgs
 
 def find_arimgs_from_list_file(list_path: str) -> List[ARImage]:

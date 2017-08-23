@@ -14,7 +14,7 @@ class TestARImage(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self._temp_path)
-    
+
     def test_find_arimg_in_dir(self):
         subdir_path = os.path.join(self._temp_path, "subdir")
         os.makedirs(subdir_path)

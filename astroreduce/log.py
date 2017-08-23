@@ -36,7 +36,7 @@ def init_logging():
     logger.setLevel(logging.DEBUG)
     logger.addHandler(ch)
     logger.addHandler(fh)
-    
+
     env.add_hook("VERBOSE", _set_verbose_hook)
     _set_verbose_hook("VERBOSE", env.get("VERBOSE"))
     env.add_hook("", _log_var_change)

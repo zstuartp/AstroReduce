@@ -28,35 +28,35 @@ class TestEnv(unittest.TestCase):
     def test_set_get(self):
         env.set("TestString", "Hello")
         env.set("TestInt", 5)
-        
+
         string_var = env.get("TestString")
         int_var = env.get("TestInt")
-        
+
         self.assertEqual(string_var, "Hello")
         self.assertEqual(int_var, 5)
 
     def test_get_default(self):
         ret = env.get("NwTeAaOk")
-        
+
         self.assertIs(ret, False)
 
     def test_import_sys_env(self):
         os.environ["TestString"] = "World"
         env.import_sys_env()
         string_var = env.get("TestString")
-        
+
         self.assertEqual(string_var, "World")
 
     def test_export_var(self):
         # Clear the variable if it exists already
         if os.environ.get("TestExportVar"):
             os.environ.pop("TestExportVar")
-            
+
         env.set("TestExportVar", "Foo")
         no_ret = os.environ.get("TestExportVar") # Should be None since we haven't exported yet
         env.export_var("TestExportVar")
         ret = os.environ.get("TestExportVar")
-        
+
         self.assertIs(no_ret, None)
         self.assertEqual(ret, "Foo")
 
@@ -65,7 +65,7 @@ class TestEnv(unittest.TestCase):
         global _hook_test_after_var
         _hook_test_before_var = False
         _hook_test_after_var = False
-        
+
         env.add_hook("HookBefore", _hook_test_before_func) # Add hook before var is defined
         env.set("HookBefore", "BeforeVarInit")
         env.set("HookAfter", "AfterVarInit")

@@ -329,7 +329,7 @@ def create_master_flats(flats_dic, mdarks_dic, output_dir):
         # Create a job thread for each group of flats
         job = jobs.Job(target=create_master_flat, args=(flats, mdarks_dic, output_dir))
         jobs.push_job(job)
-    
+
     # Start processing the job queue and wait
     jobs.start_jobs()
     jobs.wait_done()

@@ -79,7 +79,7 @@ def _create_test_arimg(
     img.fits_data = img_data
     img.saveToDisk()
     img.unloadData()
-    return img 
+    return img
 
 def _create_test_arimgs(
         path_prefix: str,
@@ -90,7 +90,7 @@ def _create_test_arimgs(
     img_exp = 1.0
     img_prefix = None
     imgs = []
-    
+
     i = 0
     for hot in _hot_data:
         if img_kind == flatfield.ImageKind.DARK:
@@ -134,7 +134,7 @@ def _setup_temp_img_dirs():
     global _temp_mflats_path
     global _temp_lights_path
     global _temp_output_path
-    
+
     _temp_base_path = tempfile.mkdtemp()
 
     _temp_darks_path  = os.path.join(_temp_base_path, _DARKS_DIR)

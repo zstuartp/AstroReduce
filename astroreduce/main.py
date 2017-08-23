@@ -97,7 +97,7 @@ def main():
             env.set("OK_MODE", "True")
 
     env.import_sys_env()
-    
+
     ff.reduce(
         darks_dir=dark_dir,
         mdarks_dir=mdark_dir,
