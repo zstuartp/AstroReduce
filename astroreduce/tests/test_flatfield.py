@@ -102,7 +102,9 @@ def _create_test_arimgs(
             img_prefix = "flat"
             subpath_prefix = os.path.join(path_prefix, _FLATS_DIR)
         else: # img_kind == ImageKind.LIGHT
-            img_data = (_light_data_base * (_flat_data_base / np.median(flat_data_base))) + _dark_data_base
+            img_data = ((_light_data_base
+                        * (_flat_data_base / np.median(flat_data_base)))
+                        + _dark_data_base)
             img_prefix = "light"
             subpath_prefix = os.path.join(path_prefix, _LIGHTS_DIR)
         img = _create_test_arimg(
