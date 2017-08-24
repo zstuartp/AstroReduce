@@ -122,14 +122,19 @@ class ARImage:
             self.saveToDisk()
         self.loadValues() # Read in important header values
 
-def find_arimgs_in_dir(directory: str, recursive=True) -> List[ARImage]:
+def find_arimgs_in_dir(directory: str, recursive: bool=True) -> List[ARImage]:
     """ Find and create ARImage objects for fits images in a "directory" """
     arimgs = []
 
+    if recursive:
+        dir_prefix = os.path.join(directory, "**")
+    else:
+        dir_prefix = directory
+
     try:
         # Get a list of all files ending in ".fits" and ".fts" in "directory"
-        img_paths = glob.glob(os.path.join(directory, "**", "*.fits"), recursive=recursive)
-        img_paths.extend(glob.glob(os.path.join(directory, "**", "*.fts"), recursive=recursive))
+        img_paths = glob.glob(os.path.join(dir_prefix, "*.fits"), recursive=recursive)
+        img_paths.extend(glob.glob(os.path.join(dir_prefix, "*.fts"), recursive=recursive))
     except OSError as err:
         logger.error("Failed to open directory: " + directory)
         return None
