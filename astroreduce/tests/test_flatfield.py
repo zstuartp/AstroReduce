@@ -197,6 +197,9 @@ class TestDarks(unittest.TestCase):
             # All 6 darks should be here
             self.assertEqual(len(value), 6)
 
+            for img in value:
+                self.assertTrue(isinstance(img, arimage.ARImage))
+
     def test_create_master_darks(self):
         self.assertTrue(True)
 
@@ -222,3 +225,32 @@ class TestFlats(unittest.TestCase):
             self.assertEqual(key, "Clear")
             # All 6 flats should be here
             self.assertEqual(len(value), 6)
+
+            for img in value:
+                self.assertTrue(isinstance(img, arimage.ARImage))
+
+class TestLights(unittest.TestCase):
+    _darks = None
+    _flats = None
+    _lights = None
+
+    def setUp(self):
+        _setup_temp_img_dirs()
+        self._darks = _create_test_arimgs(_temp_base_path, flatfield.ImageKind.DARK)
+        self._flats = _create_test_arimgs(_temp_base_path, flatfield.ImageKind.FLAT)
+        self._lights = _create_test_arimgs(_temp_base_path, flatfield.ImageKind.LIGHT)
+
+    def tearDown(self):
+        _remove_temp_img_dirs()
+
+    def test_sort_lights(self):
+        lights_sorted = flatfield.sort_arimgs_as_kind(self._flats, flatfield.ImageKind.LIGHT)
+        self.assertEqual(len(lights_sorted), 1)
+
+        for key, value in lights_sorted.items():
+            self.assertEqual(key[1], 1)
+            self.assertEqual(key[2], "Clear")
+            self.assertEqual(len(value), 6)
+
+            for img in value:
+                self.assertTrue(isinstance(img, arimage.ARImage))
