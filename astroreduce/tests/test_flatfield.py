@@ -183,7 +183,7 @@ class TestDarks(unittest.TestCase):
         _setup_temp_img_dirs()
         self._darks = _create_test_arimgs(_temp_base_path, flatfield.ImageKind.DARK)
 
-    def TearDown(self):
+    def tearDown(self):
         _remove_temp_img_dirs()
 
     def test_sort_darks(self):
@@ -209,7 +209,7 @@ class TestFlats(unittest.TestCase):
         self._darks = _create_test_arimgs(_temp_base_path, flatfield.ImageKind.DARK)
         self._flats = _create_test_arimgs(_temp_base_path, flatfield.ImageKind.FLAT)
 
-    def TearDown(self):
+    def tearDown(self):
         _remove_temp_img_dirs()
 
     def test_sort_flats(self):
