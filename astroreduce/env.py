@@ -54,25 +54,28 @@ def _run_var_hooks(key: str, run_global_hooks: bool=False):
 
 def add_hook(key: str, hook: Callable):
     """ Add a hook to call when the variable is changed """
-    hooks = _var_hooks.get(key)
+    key_up = key.upper()
+    hooks = _var_hooks.get(key_up)
     if hooks is None:
         hooks = []
-        _var_hooks[key] = hooks
+        _var_hooks[key_up] = hooks
     hooks.append(hook)
 
 
 def set(key: str, value: str, export: bool=False):
     """ Set the environmental variable given by "key=value" """
-    _vars[key] = value
+    key_up = key.upper()
+    _vars[key_up] = value
     if export:
-        export_var(key)
-    _run_var_hooks(key)
-    _run_var_hooks(key, run_global_hooks=True)
+        export_var(key_up)
+    _run_var_hooks(key_up)
+    _run_var_hooks(key_up, run_global_hooks=True)
 
 
 def get(key: str) -> str:
     """ Get the environmental variable with the name "key" """
-    value = _vars.get(key)
+    key_up = key.upper()
+    value = _vars.get(key_up)
     if value is None:
         return _VAR_DEFAULT_VAL
     return value
