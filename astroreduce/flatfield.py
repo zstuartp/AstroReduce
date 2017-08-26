@@ -34,7 +34,7 @@ from enum import Enum
 import getopt
 import glob
 import logging
-from typing import Dict, List, Type
+from typing import Any, Dict, List
 import numpy as np
 import os
 import sys
@@ -154,7 +154,7 @@ def sort_lights(lights_unsorted: List[arimage.ARImage]):
     return lights
 
 
-def sort_arimgs_as_kind(arimgs: List[Type[arimage.ARImage]], img_kind: ImageKind) -> Dict[any, List]:
+def sort_arimgs_as_kind(arimgs: List[arimage.ARImage], img_kind: ImageKind) -> Dict[Any, List]:
     sorted_arimgs = None
 
     if img_kind == ImageKind.DARK:

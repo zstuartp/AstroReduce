@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 import glob
 import os
-from typing import List, NewType
+from typing import List
 
 from astropy.io import fits
 
