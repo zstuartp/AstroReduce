@@ -3,7 +3,6 @@ import datetime
 import getopt
 import logging
 import os
-import readline
 import sys
 
 from . import env
