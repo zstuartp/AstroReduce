@@ -88,7 +88,8 @@ def med_combine(imgs, output_img):
         data_in.append(img.loadData())
     data_out = np.median(data_in, axis=0)
     output_img.fits_data = data_out
-    logger.info("Median combined " + str(len(data_in)) + " images to: " + output_img.getFullPath())
+    logger.info("Median combined " + str(len(data_in)) + " images to: "
+                + output_img.getFullPath())
     return output_img
 
 
@@ -146,15 +147,18 @@ def sort_lights(lights_unsorted: List[arimage.ARImage]):
         on = light.object_name
         et = light.exp_time
         fl = light.filter
-        key = (on, et, fl) # Combine the three elements into a single tuple to be used as the key
+        key = (on, et, fl)
         if key not in lights:
-            logger.info("Found a light of " + on + " with exp_time=" + str(et) + " in filter=" + fl)
+            logger.info("Found a light of " + on + " with exp_time=" + str(et)
+                        + " in filter=" + fl)
             lights[key] = []
         lights[key].append(light)
     return lights
 
 
-def sort_arimgs_as_kind(arimgs: List[arimage.ARImage], img_kind: ImageKind) -> Dict[Any, List]:
+def sort_arimgs_as_kind(
+        arimgs: List[arimage.ARImage],
+        img_kind: ImageKind) -> Dict[Any, List]:
     sorted_arimgs = None
 
     if img_kind == ImageKind.DARK:
@@ -169,7 +173,9 @@ def sort_arimgs_as_kind(arimgs: List[arimage.ARImage], img_kind: ImageKind) -> D
     return sorted_arimgs
 
 
-def dark_correct_arimg(img: arimage.ARImage, dark: arimage.ARImage) -> arimage.ARImage:
+def dark_correct_arimg(
+        img: arimage.ARImage,
+        dark: arimage.ARImage) -> arimage.ARImage:
     """ Dark corrects image """
     logger.info("Dark correcting image: " + img.getFullPath())
     logger.info("            with dark: " + dark.getFullPath())
@@ -183,13 +189,16 @@ def dark_correct_arimg(img: arimage.ARImage, dark: arimage.ARImage) -> arimage.A
     return img
 
 
-def dark_correct_arimgs(imgs: List[arimage.ARImage], darks_sorted: Dict[int, arimage.ARImage]) -> List[arimage.ARImage]:
+def dark_correct_arimgs(
+        imgs: List[arimage.ARImage],
+        darks_sorted: Dict[int, arimage.ARImage]) -> List[arimage.ARImage]:
     for img in imgs:
         et = int(round(img.exp_time))
         dark = darks_sorted.get(et)
         if dark == None:
             # No dark found with required exposure time, ignore this flat
-            logger.warning("Dropping flat without matching dark (exp_time=" + str(et) + "): " + img.getFullPath())
+            logger.warning("Dropping flat without matching dark (exp_time="
+                           + str(et) + "): " + img.getFullPath())
             imgs.remove(img)
             continue
         dark_correct_arimg(img, dark[0])
@@ -201,7 +210,9 @@ def dark_correct_arimgs(imgs: List[arimage.ARImage], darks_sorted: Dict[int, ari
     return imgs
 
 
-def flat_correct_arimg(img: arimage.ARImage, flat: arimage.ARImage) -> arimage.ARImage:
+def flat_correct_arimg(
+        img: arimage.ARImage,
+        flat: arimage.ARImage) -> arimage.ARImage:
     """ Flat corrects the image """
     logger.info("Flat correcting image: " + img.getFullPath())
     logger.info("            with flat: " + flat.getFullPath())
@@ -214,12 +225,15 @@ def flat_correct_arimg(img: arimage.ARImage, flat: arimage.ARImage) -> arimage.A
     return img
 
 
-def flat_correct_arimgs(imgs: List[arimage.ARImage], flats_sorted: Dict[str, arimage.ARImage]) -> List[arimage.ARImage]:
+def flat_correct_arimgs(
+        imgs: List[arimage.ARImage],
+        flats_sorted: Dict[str, arimage.ARImage]) -> List[arimage.ARImage]:
     for img in imgs:
         fl = img.filter
         mflat = mflats_dic.get(fl)
         if mflat == None: # No flat was found with the correct filter
-            logger.warning("Skipping image with no matching master flat(filter=" + fl + "): " + imgs[0].getFullPath())
+            logger.warning("Skipping image with no matching master flat (filter="
+                           + fl + "): " + imgs[0].getFullPath())
             imgs.remove(img)
             continue
         flat.loadData(keep_loaded=True)
@@ -239,7 +253,8 @@ def create_master_dark(darks, output_dir):
         return
 
     # Create the file name
-    path = os.path.join(output_dir, "MDark-Exp" + str(darks[0].exp_time).replace(".", "s") + ".fts")
+    path = os.path.join(output_dir, "MDark-Exp"
+                        + str(darks[0].exp_time).replace(".", "s") + ".fts")
 
     # Median combine
     mdark = med_combine_new_file(darks, path)
@@ -249,7 +264,8 @@ def create_master_dark(darks, output_dir):
     mdark.copyValues(darks[0])
     mdark.saveToDisk()
     mdark.unloadData()
-    logger.info("Created master dark with exp_time=" + str(darks[0].exp_time) + ": " + path)
+    logger.info("Created master dark with exp_time=" + str(darks[0].exp_time)
+                + ": " + path)
 
 
 def create_master_darks(darks_sorted: Dict, output_dir: str):
@@ -274,14 +290,16 @@ def dark_correct_flats(flats, mdarks_dic):
         logger.warning("No flats are available to dark correct")
         return
     if not bool(mdarks_dic):
-        logger.warning("No master darks available to dark correct flats for filter=" + flats[0].filter)
+        logger.warning("No master darks available to dark correct flats for filter="
+                       + flats[0].filter)
         return
     for flat in flats:
         et = int(round(flat.exp_time))
         mdark = mdarks_dic.get(et)
         if mdark == None:
             # No dark found with required exposure time, ignore this flat
-            logger.warning("Dropping flat without matching dark (exp_time=" + str(et) + "): " + flat.getFullPath())
+            logger.warning("Dropping flat without matching dark (exp_time="
+                           + str(et) + "): " + flat.getFullPath())
             flat.unloadData()
             flats.remove(flat)
             continue
@@ -316,7 +334,8 @@ def create_master_flat(flats, mdarks_dic, output_dir):
     # Save new master flat to disk and free up memory
     mflat.saveToDisk()
     mflat.unloadData()
-    logger.info("Created master flat for filter=" + flats[0].filter + ": " + path)
+    logger.info("Created master flat for filter=" + flats[0].filter + ": "
+                + path)
 
 
 def create_master_flats(flats_dic, mdarks_dic, output_dir):
@@ -327,7 +346,8 @@ def create_master_flats(flats_dic, mdarks_dic, output_dir):
 
     for flats in flats_dic.values():
         # Create a job thread for each group of flats
-        job = jobs.Job(target=create_master_flat, args=(flats, mdarks_dic, output_dir))
+        job = jobs.Job(target=create_master_flat,
+                       args=(flats, mdarks_dic, output_dir))
         jobs.push_job(job)
 
     # Start processing the job queue and wait
@@ -346,7 +366,8 @@ def create_corrected_img(key, imgs, mdarks_dic, mflats_dic, output_dir, stack=Fa
     if bool(mdarks_dic):
         mdark = mdarks_dic.get(int(round(et)))
         if mdark == None: # No dark was found with the correct exposure time
-            logger.warning("Skipping image with no matching master dark (exp_time=" + str(et) + "): " + imgs[0].getFullPath())
+            logger.warning("Skipping image with no matching master dark (exp_time="
+                           + str(et) + "): " + imgs[0].getFullPath())
             return
         else:
             mdark = mdark[0] # Get the first master dark in list
@@ -355,19 +376,20 @@ def create_corrected_img(key, imgs, mdarks_dic, mflats_dic, output_dir, stack=Fa
     if bool(mflats_dic):
         mflat = mflats_dic.get(fl)
         if mflat == None: # No flat was found with the correct filter
-            logger.warning("Skipping image with no matching master flat(filter=" + fl + "): " + imgs[0].getFullPath())
+            logger.warning("Skipping image with no matching master flat(filter="
+                           + fl + "): " + imgs[0].getFullPath())
             return
         else:
             mflat = mflat[0]
 
     i = 0
     for img in imgs: # Copy the raw light to a new file, then (dark correct and flat correct
-        file_path = os.path.join(output_dir, on \
-            + "-" + img.date_obs.replace("-", "").replace("T", "at").replace(":", "") \
-            + "-Temp" + str(int(round(img.ccd_temp))).replace("-", "m") \
-            + "-Bin" + str(img.binning) \
-            + "-Exp" + str(et).replace(".", "s") \
-            + "-" + fl \
+        file_path = os.path.join(output_dir, on
+            + "-" + img.date_obs.replace("-", "").replace("T", "at").replace(":", "")
+            + "-Temp" + str(int(round(img.ccd_temp))).replace("-", "m")
+            + "-Bin" + str(img.binning)
+            + "-Exp" + str(et).replace(".", "s")
+            + "-" + fl
             + ".fts")
         cimg = arimage.ARImage(file_path, new_file=True)
         cimg.fits_header = img.fits_header
@@ -384,11 +406,17 @@ def create_corrected_img(key, imgs, mdarks_dic, mflats_dic, output_dir, stack=Fa
         cimg.saveToDisk()
         cimg.unloadData()
         img.unloadData()
-        logger.info("Corrected image with exp_time=" + str(et) + " and filter=" + fl + ": " + img.getFullPath())
+        logger.info("Corrected image with exp_time=" + str(et)
+                    + " and filter=" + fl + ": " + img.getFullPath())
         i += 1
 
 
-def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=False):
+def create_corrected_images(
+        imgs_dic,
+        mdarks_dic,
+        mflats_dic,
+        output_dir,
+        stack=False):
     """ Dark and flat corrects light images, stacking is not implemented yet """
     # TODO: Place all images into a dictionary with key=object_name and return the dictionary for stacking
     if not bool(imgs_dic):
@@ -415,10 +443,15 @@ def create_corrected_images(imgs_dic, mdarks_dic, mflats_dic, output_dir, stack=
     jobs.wait_done()
 
 
-def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
-           mflats_dir="./mflats", raw_dir="./lights", output_dir="./output", \
-           stack=False, level=0):
-
+def reduce(
+        darks_dir="./darks",
+        mdarks_dir="./mdarks",
+        flats_dir="./flats",
+        mflats_dir="./mflats",
+        raw_dir="./lights",
+        output_dir="./output",
+        stack=False,
+        level=0):
     if level < 1:
         # Create master darks
         print ("Creating master darks in " + mdarks_dir + " from " + darks_dir)
@@ -446,4 +479,5 @@ def reduce(darks_dir="./darks", mdarks_dir="./mdarks", flats_dir="./flats", \
     print ("Correcting light images from " + raw_dir)
     print ("             with darks from " + mdarks_dir)
     print ("              and flats from " + mflats_dir)
-    create_corrected_images(raw_sorted, mdarks_sorted, mflats_sorted, output_dir, stack)
+    create_corrected_images(raw_sorted, mdarks_sorted, mflats_sorted,
+                            output_dir, stack)

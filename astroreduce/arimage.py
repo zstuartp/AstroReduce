@@ -100,7 +100,8 @@ class ARImage:
     def saveToDisk(self):
         """ Save the fits header and image data to the disk """
         self.writeValues()
-        fits.writeto(self.getFullPath(), data=self.fits_data, header=self.fits_header, overwrite=True)
+        fits.writeto(self.getFullPath(), data=self.fits_data,
+                     header=self.fits_header, overwrite=True)
 
     def setFilePath(self, path):
         """ Set the full path of the file """

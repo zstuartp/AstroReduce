@@ -28,6 +28,9 @@ def update(progress):
             status = "        "
         progress = 1 - progress
     block = int(round(barLength*progress))
-    text = "\rProgress: [{0}] {1}% {2}".format( "#"*block + "-"*(barLength-block), round(progress*100), status)
+    text = "\rProgress: [{0}] {1}% {2}".format("#"*block
+                                               + "-"*(barLength-block),
+                                               round(progress*100),
+                                               status)
     sys.stdout.write(text)
     sys.stdout.flush()
