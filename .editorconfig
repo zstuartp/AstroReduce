@@ -1,0 +1,22 @@
+# Top level config
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+insert_final_newline = true
+
+# PEP8 4 space indentation
+[*.py]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+# Tab indentation (required for standard make)
+[Makefile]
+indent_style = tab
+
+# Travis config file
+[.travis.yml]
+indent_style = space
+indent_size = 2
